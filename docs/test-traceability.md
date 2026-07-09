@@ -88,3 +88,24 @@ This document maps specification-required test items to concrete test functions.
 | 12 | Registry unknown client raises | `test_registry_unknown_client_name_raises` | Passing |
 | 13 | ToolClientPort contract satisfied by clients | `test_tool_client_port_contract_satisfied_by_all_concrete_clients` | Passing |
 | E1 | Registry is sole mode-branching point | `test_registry_is_sole_mode_branching_point` | Passing |
+
+## Phase 4 Agent Matrix
+
+| ID | Required behavior | Test function | Status |
+|---|---|---|---|
+| 1 | Agent fails clearly when real mode has no API key | `test_agent_not_configured_without_api_key` | Passing |
+| 2 | Agent returns valid output on first backend response | `test_agent_returns_valid_output_on_first_response` | Passing |
+| 3 | Agent reprompts once after invalid response and then succeeds | `test_agent_reprompts_once_on_invalid_response_then_succeeds` | Passing |
+| 4 | Agent fails after second invalid response | `test_agent_fails_after_second_invalid_response` | Passing |
+| 5 | Agent retries transient backend errors | `test_agent_retries_on_transient_error_then_succeeds` | Passing |
+| 6 | Agent does not retry permanent backend errors | `test_agent_does_not_retry_permanent_error` | Passing |
+| 7 | Planner uses current node registry types | `test_planner_uses_current_node_registry_types_not_hardcoded_list` | Passing |
+| 8 | Planner controls unsupported MVP use cases | `test_planner_rejects_or_controls_unsupported_use_case` | Passing |
+| 9 | Validator runs deterministic domain checks before backend call | `test_validator_pre_checks_with_domain_validate_and_sort_before_llm_call` | Passing |
+| 10 | Validator detects unsafe write without approval | `test_validator_detects_unsafe_write_without_approval` | Passing |
+| 11 | Repo analyzer schema rejects invalid category | `test_repo_analyzer_output_schema_rejects_invalid_category` | Passing |
+| 12 | README reviewer score bounds are enforced | `test_readme_reviewer_score_bounds_are_enforced` | Passing |
+| 13 | Issue generator rejects invalid priority | `test_issue_generator_rejects_invalid_priority` | Passing |
+| 14 | LinkedIn draft schema rejects publish claims | `test_linkedin_draft_agent_does_not_claim_publish_action` | Passing |
+| 15 | Agent prompt files are versioned and non-placeholder | `test_agent_prompt_files_are_not_placeholders` | Passing |
+| 16 | Agent output schemas reject extra fields | `test_agent_output_schemas_reject_extra_fields_where_appropriate` | Passing |
