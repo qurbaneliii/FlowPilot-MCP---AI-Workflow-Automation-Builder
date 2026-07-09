@@ -35,6 +35,14 @@ const config: Config = {
           red: "#d94f45",
           green: "#20a06b",
           violet: "#7d5bd1"
+        },
+        status: {
+          success: "#35d18a",
+          warning: "#f2b84b",
+          danger: "#ff6b5f",
+          running: "#49c6ff",
+          approval: "#f2b84b",
+          skipped: "#697773"
         }
       },
       fontSize: {
@@ -49,6 +57,9 @@ const config: Config = {
         sm: "0.25rem",
         md: "0.375rem",
         lg: "0.5rem"
+      },
+      boxShadow: {
+        soft: "0 18px 60px rgba(0, 0, 0, 0.26)"
       },
       fontFamily: {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],

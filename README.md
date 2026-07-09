@@ -9,11 +9,13 @@ FlowPilot MCP is an AI Workflow Automation Builder: a natural-language-to-execut
 - Phase 2: complete locally. Persistence adds SQLAlchemy models, Alembic migrations, repository ports/implementations, and database-backed run-state round trips. The 10 real-Postgres integration tests pass against a throwaway native PostgreSQL cluster.
 - Phase 3: complete locally. The MCP adapter layer provides GitHub, filesystem, and OpenAI MCP clients behind a shared port and registry, with mock/default and OpenAI unavailable modes tested.
 - Phase 4: complete locally. The agent abstraction layer is implemented with Planner, Validator, Executor, Repo Analyzer, README Reviewer, Issue Generator, and LinkedIn Draft agents, strict Pydantic outputs, versioned prompts, fake/unavailable/real backend modes, retry/timeout wrapping, and validation reprompt handling.
+- Phase 7: complete locally. The Next.js frontend now provides a polished FlowPilot dashboard for workflow generation, React Flow graph inspection, run polling, approval decisions, logs, node outputs, and rendered artifact viewers.
+- Phase 7 UI refinement: complete locally. The frontend now uses a staged generate/workspace experience with a dedicated workflow canvas, contextual approval/run panel, and lower tabs for reports, logs, and node results.
 
 Completed pieces:
 
 - FastAPI backend app factory with `GET /api/v1/health`
-- Next.js App Router shell with Tailwind design tokens
+- Next.js App Router dashboard with Tailwind design tokens and custom React Flow workflow nodes
 - Docker Compose services for backend, frontend, and PostgreSQL
 - Framework-independent workflow domain core under `backend/app/workflow/`
 - Environment documentation, including `OPENAI_API_KEY`, `OPENAI_AGENT_MODE`, `OPENAI_AGENT_MODEL`, and `OPENAI_MCP_SERVER_URL`
@@ -23,7 +25,7 @@ Completed pieces:
 Real in this phase:
 
 - The backend service starts and serves `/api/v1/health`.
-- The frontend service starts and renders the first FlowPilot app shell.
+- The frontend service starts and renders the FlowPilot dashboard. It can generate a workflow, start a run, poll status, resolve approvals, and render generated artifacts against the current local API.
 - PostgreSQL runs in Docker Compose and is checked by the health endpoint when `DATABASE_URL` is configured.
 - Workflow graph validation and execution are real as a standalone in-memory domain module. This includes duplicate/dangling/cycle validation, deterministic topological sort, state transitions, retry/timeout handling, cascading skips, and approval pause/resume. It is currently exercised by test fixtures in `backend/tests/fixtures/fake_node_handlers.py`; it is not yet wired to persistence, the API layer, real node handlers, MCP clients, or agents.
 - Persistence models, migrations, repository ports, and SQLAlchemy repository implementations are present. Integration tests are written for real PostgreSQL and run under CI with a Postgres service container; local execution depends on a reachable `TEST_DATABASE_URL` or `DATABASE_URL`.
@@ -32,10 +34,24 @@ Real in this phase:
 
 Not implemented yet:
 
-- Production node handlers, approval API wiring, artifact generation API wiring, and the full API contract
-- Frontend workflow generation/run screens
+- Production deployment hardening and real external MCP credential wiring
+- Final screenshot capture for `docs/screenshots/` after the stack is running
 
 If `OPENAI_API_KEY` is missing, health reports OpenAI as `not_configured`. If `OPENAI_MCP_SERVER_URL` is missing, the OpenAI MCP client uses explicit unavailable mode rather than silently returning fake tool results.
+
+## Demo Flow
+
+Use the frontend at <http://localhost:3000> for the primary MVP walkthrough:
+
+1. Enter a GitHub repository URL such as `https://github.com/example/repo`.
+2. Generate executable workflow.
+3. Review the React Flow graph and node inspector.
+4. Run workflow and watch the timeline/status panels update.
+5. Approve or reject the guarded GitHub issue creation step.
+6. Review Repo Audit Report, README Improvement Plan, GitHub Issue Drafts, and LinkedIn Draft in the artifact panel.
+
+Screenshot placeholders live in `docs/screenshots/` so README and portfolio captures have a stable destination.
+The active workflow screen prioritizes the canvas first, then shows approval, reports, logs, and node outputs through contextual panels and tabs so demo screenshots stay readable.
 
 ## Quickstart
 
@@ -61,7 +77,7 @@ On macOS/Linux or Git Bash, the equivalent script is:
 
 ## Roadmap
 
-Phases 1-4 are complete locally. Phase 5 adds production node handlers for the GitHub Repo Audit MVP. Later phases add the full API layer, premium frontend workflow screens, and final demo-readiness documentation.
+Phases 1-7 are complete locally for the GitHub Repo Audit MVP path. Later phases can focus on production deployment hardening, real credential walkthroughs, and final screenshot/demo capture.
 
 ## Phase Completion Rule
 
