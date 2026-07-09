@@ -8,7 +8,9 @@ from app.workflow.state import NodeStatus, create_run_state
 from tests.fixtures.fake_node_handlers import (
     AlwaysFailHandler,
     ApprovalStubHandler,
+    DependencyAssertingHandler,
     NoOpSuccessHandler,
+    ValueProducerHandler,
 )
 
 
@@ -35,6 +37,8 @@ def registered_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
     node_registry.register_node("noop")(NoOpSuccessHandler)
     node_registry.register_node("fail")(AlwaysFailHandler)
     node_registry.register_node("approval")(ApprovalStubHandler)
+    node_registry.register_node("value_producer")(ValueProducerHandler)
+    node_registry.register_node("dependency_asserting")(DependencyAssertingHandler)
 
 
 @pytest.mark.asyncio
@@ -141,3 +145,20 @@ async def test_resume_on_non_waiting_node_raises_invalid_resume_state() -> None:
 
     with pytest.raises(InvalidResumeStateError):
         await engine.resume(run_state, "A", "approved")
+
+
+@pytest.mark.asyncio
+async def test_engine_resolves_dependency_outputs_into_handler_context() -> None:
+    graph = WorkflowGraph(
+        nodes=[
+            node("A", "value_producer"),
+            node("B", "dependency_asserting", dependencies=["A"]),
+        ]
+    )
+    run_state = create_run_state("run-1", graph)
+
+    result = await WorkflowEngine(sleep=no_sleep).run(run_state)
+
+    assert result.status == "completed"
+    assert result.node_states["B"].status == NodeStatus.COMPLETED
+    assert result.node_states["B"].output == {"observed": True}

@@ -22,6 +22,7 @@ class NodeExecutionState(BaseModel):
     node_id: str
     status: NodeStatus = NodeStatus.PENDING
     output: dict[str, Any] | None = None
+    input_snapshot: dict[str, Any] | None = None
     error: dict[str, Any] | None = None
     retry_count: int = 0
     started_at: datetime | None = None
@@ -37,6 +38,7 @@ class RunState(BaseModel):
     status: Literal[
         "pending", "running", "completed", "failed", "waiting_for_approval"
     ] = "pending"
+    version: int = 1
     error: dict[str, Any] | None = None
 
 

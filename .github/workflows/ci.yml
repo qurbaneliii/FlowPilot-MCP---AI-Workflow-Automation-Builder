@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flowpilot
+          POSTGRES_PASSWORD: flowpilot
+          POSTGRES_DB: flowpilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flowpilot -d flowpilot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://flowpilot:flowpilot@localhost:5432/flowpilot
+      TEST_DATABASE_URL: postgresql+asyncpg://flowpilot:flowpilot@localhost:5432/flowpilot_test
+      APP_VERSION: 0.1.0
+      DEFAULT_USER_ID: 00000000-0000-0000-0000-000000000001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: python -m pip install -r requirements.txt
+
+      - name: Create test database
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=flowpilot createdb -h localhost -U flowpilot flowpilot_test
+
+      - name: Run migrations
+        working-directory: backend
+        run: DATABASE_URL="$TEST_DATABASE_URL" alembic upgrade head
+
+      - name: Backend lint
+        working-directory: backend
+        run: python -m ruff check app tests
+
+      - name: Backend format check
+        working-directory: backend
+        run: python -m black --check app tests
+
+      - name: Backend tests
+        working-directory: backend
+        run: DATABASE_URL="$TEST_DATABASE_URL" python -m pytest tests --cov=app/workflow --cov-report=term-missing --cov-fail-under=85
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build

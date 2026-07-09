@@ -13,6 +13,7 @@ from app.workflow.exceptions import (
     WorkflowDomainError,
 )
 from app.workflow.graph import NodeDefinition, validate_and_sort
+from app.workflow.input_resolution import resolve_node_inputs
 from app.workflow.node_registry import get_handler
 from app.workflow.nodes.base import NodeExecutionContext, NodeExecutionResult
 from app.workflow.state import NodeExecutionState, NodeStatus, RunState
@@ -145,7 +146,13 @@ class WorkflowEngine:
     ) -> None:
         self._transition(node_state, NodeStatus.RUNNING)
         node_state.started_at = self._now()
-        context = NodeExecutionContext(node=node, run_state=run_state)
+        input_payload = resolve_node_inputs(node, run_state)
+        node_state.input_snapshot = input_payload
+        context = NodeExecutionContext(
+            node=node,
+            run_state=run_state,
+            input_payload=input_payload,
+        )
 
         try:
             handler_cls = get_handler(node.type)

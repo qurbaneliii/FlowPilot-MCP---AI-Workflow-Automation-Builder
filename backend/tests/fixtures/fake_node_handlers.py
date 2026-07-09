@@ -99,3 +99,28 @@ class ApprovalStubHandler(NodeHandler):
             status="waiting_for_approval",
             output={"pending": True},
         )
+
+
+class ValueProducerHandler(NodeHandler):
+    input_schema: ClassVar[type[BaseModel]] = EmptyInput
+    output_schema: ClassVar[type[BaseModel]] = EmptyOutput
+
+    async def execute(self, context: NodeExecutionContext) -> NodeExecutionResult:
+        return NodeExecutionResult(status="completed", output={"value": 42})
+
+
+class DependencyAssertingHandler(NodeHandler):
+    input_schema: ClassVar[type[BaseModel]] = EmptyInput
+    output_schema: ClassVar[type[BaseModel]] = EmptyOutput
+
+    async def execute(self, context: NodeExecutionContext) -> NodeExecutionResult:
+        dependency_output = context.input_payload["_dependencies"]["A"]
+        if dependency_output != {"value": 42}:
+            return NodeExecutionResult(
+                status="failed",
+                error={
+                    "code": "missing_dependency_output",
+                    "message": "Expected dependency A output in context input payload",
+                },
+            )
+        return NodeExecutionResult(status="completed", output={"observed": True})

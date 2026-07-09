@@ -12,6 +12,7 @@ class NodeExecutionContext(BaseModel):
 
     node: NodeDefinition
     run_state: RunState
+    input_payload: dict[str, Any]
 
 
 class NodeExecutionResult(BaseModel):
