@@ -1,1 +1,4 @@
-"""Workflow execution service is implemented in Phase 6."""
+from app.services.workflow_run_service import WorkflowRunService
+
+
+__all__ = ["WorkflowRunService"]

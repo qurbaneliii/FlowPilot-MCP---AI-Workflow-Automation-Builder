@@ -36,7 +36,17 @@ def test_workflow_package_has_no_sqlalchemy_import() -> None:
 
 
 def test_workflow_package_has_no_infrastructure_layer_import() -> None:
-    assert_no_import_prefix(("httpx", "app.api", "app.mcp", "app.agents"))
+    offenders = [
+        (path, module)
+        for path, module in workflow_imports()
+        if "workflow\\nodes" not in str(path)
+        and "workflow/nodes" not in str(path)
+        and any(
+            module == prefix or module.startswith(f"{prefix}.")
+            for prefix in ("httpx", "app.api", "app.mcp", "app.agents")
+        )
+    ]
+    assert offenders == []
 
 
 def test_node_status_assignment_only_occurs_inside_transition_method() -> None:

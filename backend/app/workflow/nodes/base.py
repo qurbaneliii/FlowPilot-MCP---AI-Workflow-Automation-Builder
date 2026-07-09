@@ -14,6 +14,10 @@ class NodeExecutionContext(BaseModel):
     run_state: RunState
     input_payload: dict[str, Any]
 
+    @property
+    def inputs(self) -> dict[str, Any]:
+        return self.input_payload
+
 
 class NodeExecutionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
