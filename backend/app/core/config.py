@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     )
     default_user_id: UUID = Field(default=UUID("00000000-0000-0000-0000-000000000001"))
     openai_api_key: str | None = None
+    openai_agent_mode: str = "fake"
+    openai_agent_model: str = "gpt-4.1"
     openai_mcp_server_url: str | None = None
     github_mcp_mode: str = "mock"
     github_mcp_server_url: str | None = None

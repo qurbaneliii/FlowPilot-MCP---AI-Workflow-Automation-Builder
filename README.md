@@ -8,6 +8,7 @@ FlowPilot MCP is an AI Workflow Automation Builder: a natural-language-to-execut
 - Phase 1: complete. The framework-independent domain core is implemented and tested: graph validation, deterministic topological sort, run/resume execution, retry, timeout, cascading skip, and human-approval pause semantics.
 - Phase 2: complete locally. Persistence adds SQLAlchemy models, Alembic migrations, repository ports/implementations, and database-backed run-state round trips. The 10 real-Postgres integration tests pass against a throwaway native PostgreSQL cluster.
 - Phase 3: complete locally. The MCP adapter layer provides GitHub, filesystem, and OpenAI MCP clients behind a shared port and registry, with mock/default and OpenAI unavailable modes tested.
+- Phase 4: complete locally. The agent abstraction layer is implemented with Planner, Validator, Executor, Repo Analyzer, README Reviewer, Issue Generator, and LinkedIn Draft agents, strict Pydantic outputs, versioned prompts, fake/unavailable/real backend modes, retry/timeout wrapping, and validation reprompt handling.
 
 Completed pieces:
 
@@ -15,7 +16,7 @@ Completed pieces:
 - Next.js App Router shell with Tailwind design tokens
 - Docker Compose services for backend, frontend, and PostgreSQL
 - Framework-independent workflow domain core under `backend/app/workflow/`
-- Environment documentation, including `OPENAI_API_KEY` and `OPENAI_MCP_SERVER_URL`
+- Environment documentation, including `OPENAI_API_KEY`, `OPENAI_AGENT_MODE`, `OPENAI_AGENT_MODEL`, and `OPENAI_MCP_SERVER_URL`
 
 ## What Is Real vs. Mocked
 
@@ -27,13 +28,14 @@ Real in this phase:
 - Workflow graph validation and execution are real as a standalone in-memory domain module. This includes duplicate/dangling/cycle validation, deterministic topological sort, state transitions, retry/timeout handling, cascading skips, and approval pause/resume. It is currently exercised by test fixtures in `backend/tests/fixtures/fake_node_handlers.py`; it is not yet wired to persistence, the API layer, real node handlers, MCP clients, or agents.
 - Persistence models, migrations, repository ports, and SQLAlchemy repository implementations are present. Integration tests are written for real PostgreSQL and run under CI with a Postgres service container; local execution depends on a reachable `TEST_DATABASE_URL` or `DATABASE_URL`.
 - MCP adapter clients are real as interface-complete adapters. GitHub and filesystem default to explicit mock mode for safe local development. OpenAI MCP supports `REAL` mode when `OPENAI_MCP_SERVER_URL` and `OPENAI_API_KEY` are configured, and `UNAVAILABLE` mode otherwise. OpenAI MCP protocol behavior is verified against a local fake MCP server, not the public OpenAI service.
+- The OpenAI agent layer is real as an interface-complete, testable abstraction. Agent wrappers load versioned prompts, invoke a selected backend mode, validate strict Pydantic outputs, retry transient failures, and reprompt once on invalid model output. Local tests use deterministic fake/unavailable backends; the real OpenAI Agents SDK transport is intentionally isolated and is not exercised by tests.
 
 Not implemented yet:
 
-- OpenAI Agents SDK wrappers
-- Node handlers, approvals, artifact generation, and the full API contract
+- Production node handlers, approval API wiring, artifact generation API wiring, and the full API contract
+- Frontend workflow generation/run screens
 
-If `OPENAI_API_KEY` is missing, health reports OpenAI as `not_configured`. If `OPENAI_MCP_SERVER_URL` is missing, the future OpenAI MCP client must use documented no-op mode and log `OPENAI_MCP_NOT_CONFIGURED`.
+If `OPENAI_API_KEY` is missing, health reports OpenAI as `not_configured`. If `OPENAI_MCP_SERVER_URL` is missing, the OpenAI MCP client uses explicit unavailable mode rather than silently returning fake tool results.
 
 ## Quickstart
 
@@ -59,7 +61,7 @@ On macOS/Linux or Git Bash, the equivalent script is:
 
 ## Roadmap
 
-Phases 1-3 are complete locally. Phase 4 adds the OpenAI Agents SDK wrapper layer. Later phases add real node handlers, the full API layer, frontend workflow screens, and final documentation.
+Phases 1-4 are complete locally. Phase 5 adds production node handlers for the GitHub Repo Audit MVP. Later phases add the full API layer, premium frontend workflow screens, and final demo-readiness documentation.
 
 ## Phase Completion Rule
 

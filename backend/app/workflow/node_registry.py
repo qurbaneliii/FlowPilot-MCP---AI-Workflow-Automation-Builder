@@ -22,3 +22,7 @@ def get_handler(node_type: str) -> type[NodeHandler]:
         return _REGISTRY[node_type]
     except KeyError as exc:
         raise UnknownNodeTypeError(node_type=node_type) from exc
+
+
+def registered_node_types() -> list[str]:
+    return sorted(_REGISTRY)
