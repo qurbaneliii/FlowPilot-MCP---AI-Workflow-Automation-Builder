@@ -1,5 +1,3 @@
-from collections.abc import AsyncIterator
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -58,8 +56,12 @@ async def test_check_database_returns_error_when_query_fails() -> None:
 
 
 @pytest.mark.asyncio
-async def test_check_openai_returns_not_configured_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(health_module, "get_settings", lambda: Settings(openai_api_key=None))
+async def test_check_openai_returns_not_configured_without_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(openai_api_key=None)
+    )
 
     status = await health_module.check_openai()
 
@@ -67,7 +69,9 @@ async def test_check_openai_returns_not_configured_without_key(monkeypatch: pyte
 
 
 @pytest.mark.asyncio
-async def test_check_openai_returns_ok_with_key(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_check_openai_returns_ok_with_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         health_module, "get_settings", lambda: Settings(openai_api_key="test-key")
     )
@@ -88,7 +92,9 @@ def test_health_endpoint_returns_200_when_dependencies_degraded(
 
     monkeypatch.setattr(health_module, "check_database", degraded_database)
     monkeypatch.setattr(health_module, "check_openai", unconfigured_openai)
-    monkeypatch.setattr(health_module, "get_settings", lambda: Settings(app_version="test"))
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(app_version="test")
+    )
 
     client = TestClient(create_app())
     response = client.get("/api/v1/health")
@@ -112,7 +118,9 @@ def test_health_endpoint_returns_200_when_dependencies_healthy(
 
     monkeypatch.setattr(health_module, "check_database", reachable_database)
     monkeypatch.setattr(health_module, "check_openai", configured_openai)
-    monkeypatch.setattr(health_module, "get_settings", lambda: Settings(app_version="test"))
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(app_version="test")
+    )
 
     client = TestClient(create_app())
     response = client.get("/api/v1/health")
