@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     default_user_id: UUID = Field(default=UUID("00000000-0000-0000-0000-000000000001"))
     openai_api_key: str | None = None
     openai_mcp_server_url: str | None = None
+    github_mcp_mode: str = "mock"
     github_mcp_server_url: str | None = None
     github_token: str | None = None
+    filesystem_mcp_mode: str = "mock"
     filesystem_mcp_root: str = "/workspace"
 
 

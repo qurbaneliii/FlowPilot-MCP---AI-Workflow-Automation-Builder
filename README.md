@@ -6,7 +6,8 @@ FlowPilot MCP is an AI Workflow Automation Builder: a natural-language-to-execut
 
 - Phase 0: complete. The repository scaffold, FastAPI health endpoint, Next.js app shell, Docker Compose stack definition, and stack verification scripts are in place.
 - Phase 1: complete. The framework-independent domain core is implemented and tested: graph validation, deterministic topological sort, run/resume execution, retry, timeout, cascading skip, and human-approval pause semantics.
-- Phase 2: in progress. Persistence adds SQLAlchemy models, Alembic migrations, repository ports/implementations, and database-backed run-state round trips.
+- Phase 2: complete locally. Persistence adds SQLAlchemy models, Alembic migrations, repository ports/implementations, and database-backed run-state round trips. The 10 real-Postgres integration tests pass against a throwaway native PostgreSQL cluster.
+- Phase 3: complete locally. The MCP adapter layer provides GitHub, filesystem, and OpenAI MCP clients behind a shared port and registry, with mock/default and OpenAI unavailable modes tested.
 
 Completed pieces:
 
@@ -25,10 +26,10 @@ Real in this phase:
 - PostgreSQL runs in Docker Compose and is checked by the health endpoint when `DATABASE_URL` is configured.
 - Workflow graph validation and execution are real as a standalone in-memory domain module. This includes duplicate/dangling/cycle validation, deterministic topological sort, state transitions, retry/timeout handling, cascading skips, and approval pause/resume. It is currently exercised by test fixtures in `backend/tests/fixtures/fake_node_handlers.py`; it is not yet wired to persistence, the API layer, real node handlers, MCP clients, or agents.
 - Persistence models, migrations, repository ports, and SQLAlchemy repository implementations are present. Integration tests are written for real PostgreSQL and run under CI with a Postgres service container; local execution depends on a reachable `TEST_DATABASE_URL` or `DATABASE_URL`.
+- MCP adapter clients are real as interface-complete adapters. GitHub and filesystem default to explicit mock mode for safe local development. OpenAI MCP supports `REAL` mode when `OPENAI_MCP_SERVER_URL` and `OPENAI_API_KEY` are configured, and `UNAVAILABLE` mode otherwise. OpenAI MCP protocol behavior is verified against a local fake MCP server, not the public OpenAI service.
 
 Not implemented yet:
 
-- MCP clients and registry
 - OpenAI Agents SDK wrappers
 - Node handlers, approvals, artifact generation, and the full API contract
 
@@ -58,7 +59,7 @@ On macOS/Linux or Git Bash, the equivalent script is:
 
 ## Roadmap
 
-Phase 1 is complete. Phase 2 persistence is the current focus. Later phases add MCP clients, agents, real node handlers, the full API layer, frontend workflow screens, and final documentation.
+Phases 1-3 are complete locally. Phase 4 adds the OpenAI Agents SDK wrapper layer. Later phases add real node handlers, the full API layer, frontend workflow screens, and final documentation.
 
 ## Phase Completion Rule
 

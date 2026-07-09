@@ -1,0 +1,23 @@
+{
+  "repo_url": "https://github.com/qurbaneliii/mock-repo",
+  "metadata": {
+    "name": "mock-repo",
+    "description": "A realistic mock repository for FlowPilot audit tests.",
+    "topics": ["fastapi", "nextjs", "automation"],
+    "default_branch": "main"
+  },
+  "file_tree": [
+    "README.md",
+    "backend/app/main.py",
+    "frontend/src/app/page.tsx",
+    ".github/workflows/ci.yml",
+    "docs/architecture.md"
+  ],
+  "readme": "# Mock Repo\n\nA realistic project with setup and usage instructions.\n\n## Setup\n\nInstall dependencies.\n\n## Usage\n\nRun the app.",
+  "env_example_present": false,
+  "workflows": [".github/workflows/ci.yml"],
+  "deployment_docs_present": true,
+  "screenshots_present": false,
+  "test_files": [],
+  "secret_scan_matches": []
+}
