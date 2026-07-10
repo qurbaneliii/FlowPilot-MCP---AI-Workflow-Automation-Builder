@@ -6,7 +6,6 @@ import { SectionCard } from "@/components/layout/SectionCard";
 import { RunSummaryPanel } from "@/components/runs/RunSummaryPanel";
 import { RunTimeline } from "@/components/runs/RunTimeline";
 import { NodeInspector } from "./NodeInspector";
-import type { Approval } from "@/types/approval";
 import type { Run } from "@/types/run";
 import type { WorkflowGraph } from "@/types/workflow";
 
@@ -35,13 +34,13 @@ export function ContextPanel({
   onApprove,
   onReject
 }: ContextPanelProps) {
-  const approval = run?.pending_approval;
+  const approval = run?.approval ?? run?.pending_approval;
   if (approval) {
     return (
       <SectionCard title="Approval Required" eyebrow="Primary action" className="approval-glow">
         <ApprovalPanel
-          approval={approval as Approval}
-          mode={mode}
+          approval={approval}
+          mode={run?.approval?.mode ?? mode}
           loadingDecision={loadingDecision}
           error={approvalError}
           lastDecision={lastDecision}

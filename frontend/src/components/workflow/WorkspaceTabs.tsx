@@ -45,14 +45,21 @@ export function WorkspaceTabs({
   onApprove,
   onReject
 }: WorkspaceTabsProps) {
-  const [manualTab, setManualTab] = useState<TabId | null>(null);
+  const [manualTab, setManualTab] = useState<{
+    tab: TabId;
+    stateKey: string;
+  } | null>(null);
+  const backendRecommendedTab = normalizeTab(run?.ui_state?.recommended_tab);
+  const stateKey = `${run?.status ?? "idle"}:${run?.ui_state?.recommended_tab ?? "overview"}`;
   const recommendedTab: TabId =
-    run?.status === "waiting_for_approval"
+    backendRecommendedTab ??
+    (run?.status === "waiting_for_approval"
       ? "approval"
       : run?.status === "completed"
         ? "reports"
-        : "overview";
-  const activeTab = manualTab ?? recommendedTab;
+        : "overview");
+  const activeTab =
+    manualTab?.stateKey === stateKey ? manualTab.tab : recommendedTab;
 
   return (
     <section className="section-card" id="reports">
@@ -75,7 +82,7 @@ export function WorkspaceTabs({
                 className={`workspace-tab ${isActive ? "workspace-tab-active" : ""} ${
                   needsAttention ? "workspace-tab-attention" : ""
                 }`}
-                onClick={() => setManualTab(tab.id)}
+                onClick={() => setManualTab({ tab: tab.id, stateKey })}
               >
                 {tab.label}
               </button>
@@ -90,16 +97,16 @@ export function WorkspaceTabs({
           <RunTimeline graph={graph} run={run} onSelectNode={onSelectNode} />
         </div>
       )}
-      {activeTab === "approval" && run?.pending_approval && (
+      {activeTab === "approval" && (run?.approval ?? run?.pending_approval) && (
         <EmptyState
           icon={ShieldCheck}
           title="Approval is active in the context panel"
           description="FlowPilot paused before creating GitHub issues. Review and resolve the approval card next to the workflow canvas."
         />
       )}
-      {activeTab === "approval" && run && !run.pending_approval && (
+      {activeTab === "approval" && run && !(run.approval ?? run.pending_approval) && (
         <ApprovalPanel
-          approval={run?.pending_approval}
+          approval={run?.approval ?? run?.pending_approval}
           mode={mode}
           loadingDecision={loadingDecision}
           error={approvalError}
@@ -127,4 +134,17 @@ export function WorkspaceTabs({
       )}
     </section>
   );
+}
+
+function normalizeTab(value?: string | null): TabId | null {
+  if (
+    value === "overview" ||
+    value === "approval" ||
+    value === "reports" ||
+    value === "logs" ||
+    value === "node-results"
+  ) {
+    return value;
+  }
+  return null;
 }

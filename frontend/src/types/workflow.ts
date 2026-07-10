@@ -29,6 +29,9 @@ export interface Workflow {
   workflow_id: string;
   workflow: WorkflowGraph;
   metadata?: Record<string, unknown>;
+  summary?: BackendWorkflowSummary | null;
+  node_display?: BackendNodeDisplay[];
+  layout?: BackendWorkflowLayout | null;
 }
 
 export interface GeneratedWorkflow extends Workflow {
@@ -37,6 +40,9 @@ export interface GeneratedWorkflow extends Workflow {
     issues: string[];
     corrected_graph?: WorkflowGraph | null;
   };
+  summary?: BackendWorkflowSummary;
+  node_display?: BackendNodeDisplay[];
+  layout?: BackendWorkflowLayout | null;
   warnings: string[];
 }
 
@@ -47,4 +53,38 @@ export interface WorkflowSummary {
   riskyActionCount: number;
   approvalRequired: boolean;
   estimatedStages: number;
+  repoUrl?: string | null;
+  mode?: string | null;
+  statusLabel?: string;
+}
+
+export interface BackendWorkflowSummary {
+  name: string;
+  description: string;
+  repo_url?: string | null;
+  node_count: number;
+  estimated_stages: number;
+  risky_action_count: number;
+  approval_required: boolean;
+  mode?: string | null;
+  status_label: string;
+}
+
+export interface BackendNodeDisplay {
+  id: string;
+  type: string;
+  name: string;
+  subtitle: string;
+  icon: string;
+  order: number;
+  stage: number;
+  dependencies: string[];
+  risk_level: string;
+  approval_required: boolean;
+  description: string;
+}
+
+export interface BackendWorkflowLayout {
+  direction: string;
+  nodes: Array<{ id: string; x: number; y: number }>;
 }

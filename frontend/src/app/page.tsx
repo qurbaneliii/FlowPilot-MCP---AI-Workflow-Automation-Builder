@@ -42,6 +42,8 @@ export default function HomePage() {
 
   const graph = workflowState.workflow?.workflow;
   const mode = runState.run?.mode;
+  const activeSelectedNodeId =
+    selectedNodeId ?? runState.run?.ui_state?.canvas_focus_node_id ?? null;
 
   return (
     <AppShell health={health} healthError={healthError} mode={mode}>
@@ -84,9 +86,10 @@ export default function HomePage() {
             >
               <WorkflowCanvas
                 graph={graph}
+                workflow={workflowState.workflow}
                 run={runState.run}
                 isLoading={workflowState.isGenerating}
-                selectedNodeId={selectedNodeId}
+                selectedNodeId={activeSelectedNodeId}
                 onSelectNode={setSelectedNodeId}
               />
             </SectionCard>
@@ -95,7 +98,7 @@ export default function HomePage() {
               graph={graph}
               run={runState.run}
               mode={mode}
-              selectedNodeId={selectedNodeId}
+              selectedNodeId={activeSelectedNodeId}
               loadingDecision={approvalActions.loadingDecision}
               approvalError={approvalActions.error}
               lastDecision={approvalActions.lastDecision}

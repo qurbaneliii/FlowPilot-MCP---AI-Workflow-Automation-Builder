@@ -23,13 +23,20 @@ export function NodeResultViewer({ run }: NodeResultViewerProps) {
       {run.nodes.map((node) => (
         <div key={node.node_id} className="rounded-md border border-neutral-800 bg-neutral-950/55 p-3">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-medium text-neutral-100">{node.node_id}</p>
+            <p className="truncate text-sm font-medium text-neutral-100">
+              {node.output_summary?.title ??
+                run.node_results?.find((item) => item.node_id === node.node_id)?.title ??
+                node.name ??
+                node.node_id}
+            </p>
             <StatusPill status={node.status} compact />
           </div>
           <p className="text-sm leading-6 text-neutral-400">
             {node.error
               ? String(node.error.message ?? "Node failed.")
-              : summarizeNodeResult(node.node_id, node.output)}
+              : node.output_summary?.summary ??
+                run.node_results?.find((item) => item.node_id === node.node_id)?.summary ??
+                summarizeNodeResult(node.node_id, node.output)}
           </p>
           {node.output && (
             <details className="mt-3 rounded-md border border-neutral-800 bg-neutral-950/70 p-3">

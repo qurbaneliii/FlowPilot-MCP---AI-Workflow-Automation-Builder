@@ -10,6 +10,7 @@ flowchart LR
   Frontend --> ApiClient["Frontend API Client"]
   ApiClient --> Backend["FastAPI API Layer"]
   Backend --> Services["Application Services"]
+  Services --> ViewModels["Run / Workflow View Services"]
   Services --> RunService["Workflow Run Service"]
   RunService --> Handlers["Production Node Handlers"]
   RunService --> Domain["Pure Workflow Domain Engine"]
@@ -36,11 +37,14 @@ flowchart LR
 - Production node handlers live under `backend/app/workflow/nodes/` and are registered through the existing node registry. They convert agent/MCP failures into controlled node failure results and keep mock mode explicit in outputs.
 - Human approval persistence and markdown artifact persistence are coordinated by services around the workflow engine. The handler emits the approval/artifact intent; services persist and expose it through API responses.
 - The Phase 6 MVP API uses deterministic in-process persistence for local E2E tests while the SQLAlchemy repositories remain available for the database-backed persistence layer.
+- UI-friendly response data is computed in service/view-model code from raw persisted workflow, run, artifact, and approval data. The backend exposes compact summaries, timeline entries, approval panel data, artifact tab availability, and `ui_state` without persisting UI-only fields or removing raw debug outputs.
+- Health responses separate raw dependency checks from user-facing service labels and blocking flags, so local mock/in-memory modes remain explicit without presenting a non-blocking database miss as a fatal app error.
 
 ## Boundaries
 
 - Domain engine, graph, state, and input resolution stay pure and live under `backend/app/workflow/`.
 - Services coordinate persistence and workflow execution.
+- View services compute additive API response summaries for the frontend.
 - Node handlers call agents and MCP clients.
 - Agents handle AI transformations and output validation.
 - MCP clients handle external tool access.

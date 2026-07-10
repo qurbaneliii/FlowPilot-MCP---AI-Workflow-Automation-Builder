@@ -1,12 +1,22 @@
 import { AlertTriangle, Github } from "lucide-react";
-import type { Approval } from "@/types/approval";
+import type { Approval, ApprovalPanelData } from "@/types/approval";
 
 interface ApprovalActionPreviewProps {
-  approval: Approval;
+  approval: Approval | ApprovalPanelData;
   mode?: string | null;
 }
 
 export function ApprovalActionPreview({ approval, mode }: ApprovalActionPreviewProps) {
+  const issueCount =
+    "issue_count" in approval ? approval.issue_count : approval.issue_drafts.length;
+  const action =
+    "target_action" in approval && approval.target_action
+      ? approval.target_action
+      : "GitHub issue creation";
+  const summary =
+    "approval_summary" in approval
+      ? approval.approval_summary
+      : "Approve creation of generated GitHub issue drafts.";
   return (
     <div className="rounded-md border border-status-approval/40 bg-status-approval/10 p-4">
       <div className="flex items-start gap-3">
@@ -14,7 +24,7 @@ export function ApprovalActionPreview({ approval, mode }: ApprovalActionPreviewP
           <Github className="h-5 w-5 text-status-approval" aria-hidden="true" />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-neutral-50">GitHub issue creation</p>
+          <p className="font-semibold text-neutral-50">{action}</p>
           <p className="mt-1 text-sm leading-6 text-neutral-300">
             This action will create GitHub issues after approval. Mode is{" "}
             <span className="font-mono text-status-approval">{mode ?? "pending"}</span>.
@@ -23,12 +33,12 @@ export function ApprovalActionPreview({ approval, mode }: ApprovalActionPreviewP
       </div>
       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
         <PreviewMetric label="Repository" value={approval.target_repository ?? "Not provided"} />
-        <PreviewMetric label="Issue drafts" value={String(approval.issue_drafts.length)} />
+        <PreviewMetric label="Issue drafts" value={String(issueCount)} />
         <PreviewMetric label="Risk level" value={approval.risk_level ?? "medium"} />
       </div>
       <div className="mt-4 flex items-start gap-2 text-sm text-status-approval">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <p>{approval.approval_summary ?? "Approve creation of generated GitHub issue drafts."}</p>
+        <p>{summary ?? "Approve creation of generated GitHub issue drafts."}</p>
       </div>
     </div>
   );

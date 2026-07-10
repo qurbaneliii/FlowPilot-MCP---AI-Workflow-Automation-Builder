@@ -1,4 +1,3 @@
-
 import pytest
 
 import app.workflow.nodes  # noqa: F401

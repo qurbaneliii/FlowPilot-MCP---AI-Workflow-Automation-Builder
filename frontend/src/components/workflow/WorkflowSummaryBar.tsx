@@ -25,25 +25,25 @@ export function WorkflowSummaryBar({
   isStarting,
   onRun
 }: WorkflowSummaryBarProps) {
-  const summary = getWorkflowSummary(graph);
+  const summary = getWorkflowSummary(graph, workflow);
   return (
     <section className="summary-bar">
       <div className="min-w-0">
         <p className="kicker">Active workflow</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold text-neutral-50">{summary.name}</h2>
-          <StatusPill status={workflow?.validation.valid ? "completed" : "pending"} label="Validated" />
+          <StatusPill status={workflow?.validation.valid ? "completed" : "pending"} label={summary.statusLabel ?? "Validated"} />
           {run && <RunStatusBadge status={run.status} />}
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-sm text-neutral-400">
           <span className="inline-flex items-center gap-1.5">
             <Github className="h-4 w-4 text-neutral-500" aria-hidden="true" />
-            {repoUrl.replace("https://github.com/", "github.com/")}
+            {(summary.repoUrl ?? repoUrl).replace("https://github.com/", "github.com/")}
           </span>
           <span>{summary.nodeCount} nodes</span>
           <span>{summary.riskyActionCount} risky action</span>
           <span>{summary.approvalRequired ? "Approval required" : "No approval gate"}</span>
-          <span>{titleCase(mode ?? "mode pending")}</span>
+          <span>{titleCase(summary.mode ?? mode ?? "mode pending")}</span>
         </div>
       </div>
       <div className="flex shrink-0 flex-col gap-2 sm:flex-row">

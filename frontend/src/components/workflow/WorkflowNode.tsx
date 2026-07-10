@@ -31,10 +31,10 @@ export function WorkflowNode({ data }: NodeProps<FlowNodeData>) {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-neutral-50">
-              {data.workflowNode.name}
+              {data.display?.name ?? data.runNode?.name ?? data.workflowNode.name}
             </p>
             <p className="truncate font-mono text-[11px] uppercase tracking-normal text-neutral-500">
-              {typeMeta.label}
+              {data.display?.subtitle ?? data.runNode?.subtitle ?? typeMeta.label}
             </p>
           </div>
         </div>

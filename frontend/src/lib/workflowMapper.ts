@@ -8,6 +8,8 @@ import type {
 } from "@/types/artifact";
 import type { Run, RunNode } from "@/types/run";
 import type {
+  BackendNodeDisplay,
+  GeneratedWorkflow,
   WorkflowGraph,
   WorkflowNode,
   WorkflowSummary
@@ -17,11 +19,28 @@ import { summarizeUnknown, titleCase } from "./formatters";
 export interface FlowNodeData {
   workflowNode: WorkflowNode;
   runNode?: RunNode;
+  display?: BackendNodeDisplay;
   status: string;
   outputSummary: string;
 }
 
-export function getWorkflowSummary(graph?: WorkflowGraph | null): WorkflowSummary {
+export function getWorkflowSummary(
+  graph?: WorkflowGraph | null,
+  workflow?: GeneratedWorkflow | null
+): WorkflowSummary {
+  if (workflow?.summary) {
+    return {
+      name: workflow.summary.name,
+      description: workflow.summary.description,
+      nodeCount: workflow.summary.node_count,
+      riskyActionCount: workflow.summary.risky_action_count,
+      approvalRequired: workflow.summary.approval_required,
+      estimatedStages: workflow.summary.estimated_stages,
+      repoUrl: workflow.summary.repo_url,
+      mode: workflow.summary.mode,
+      statusLabel: workflow.summary.status_label
+    };
+  }
   const nodes = graph?.nodes ?? [];
   const approvalRequired = nodes.some((node) => node.type === "human_approval");
   const riskyActionCount = nodes.filter((node) =>
@@ -43,10 +62,20 @@ export function getWorkflowSummary(graph?: WorkflowGraph | null): WorkflowSummar
 
 export function mapWorkflowToReactFlow(
   graph?: WorkflowGraph | null,
-  run?: Run | null
+  run?: Run | null,
+  workflow?: GeneratedWorkflow | null
 ): { nodes: Node<FlowNodeData>[]; edges: Edge[] } {
   const workflowNodes = graph?.nodes ?? [];
   const runNodes = new Map((run?.nodes ?? []).map((node) => [node.node_id, node]));
+  const displayById = new Map(
+    (workflow?.node_display ?? []).map((node) => [node.id, node])
+  );
+  const layoutById = new Map(
+    (run?.layout?.nodes ?? workflow?.layout?.nodes ?? []).map((node) => [
+      node.id,
+      node
+    ])
+  );
   const depthMap = getDepthMap(workflowNodes);
   const columns = new Map<number, WorkflowNode[]>();
   workflowNodes.forEach((node) => {
@@ -59,18 +88,24 @@ export function mapWorkflowToReactFlow(
     const siblingIndex = siblings.findIndex((sibling) => sibling.id === node.id);
     const centeredOffset = siblingIndex - (siblings.length - 1) / 2;
     const runNode = runNodes.get(node.id);
+    const backendPosition = layoutById.get(node.id);
+    const display = displayById.get(node.id);
     return {
       id: node.id,
       type: "flowpilotNode",
       position: {
-        x: centeredOffset * 340,
-        y: depth * 156
+        x: backendPosition?.x ?? centeredOffset * 340,
+        y: backendPosition?.y ?? depth * 156
       },
       data: {
         workflowNode: node,
         runNode,
+        display,
         status: runNode?.status ?? "pending",
-        outputSummary: summarizeUnknown(runNode?.output)
+        outputSummary:
+          runNode?.display?.summary ??
+          runNode?.output_summary?.summary ??
+          summarizeUnknown(runNode?.output)
       }
     };
   });

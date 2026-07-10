@@ -10,6 +10,7 @@ from app.schemas.workflow_graph import (
     WorkflowResponse,
 )
 from app.services.store import STORE, WorkflowEntry, new_id, now
+from app.services.run_view_service import RunViewService
 
 
 GITHUB_REPO_RE = re.compile(
@@ -18,6 +19,9 @@ GITHUB_REPO_RE = re.compile(
 
 
 class WorkflowGenerationService:
+    def __init__(self) -> None:
+        self.view = RunViewService()
+
     async def generate(
         self, request: GenerateWorkflowRequest
     ) -> GenerateWorkflowResponse:
@@ -58,6 +62,11 @@ class WorkflowGenerationService:
             workflow_id=workflow_id,
             workflow=graph_to_save,
             validation=validation,
+            summary=self.view.workflow_summary(
+                graph_to_save, repo_url=request.repo_url, mode="mock"
+            ),
+            node_display=self.view.node_display(graph_to_save),
+            layout=self.view.layout(graph_to_save),
             warnings=validation.issues,
         )
 
@@ -73,4 +82,9 @@ class WorkflowGenerationService:
                 "repo_url": workflow.repo_url,
                 "created_at": workflow.created_at.isoformat(),
             },
+            summary=self.view.workflow_summary(
+                workflow.graph, repo_url=workflow.repo_url, mode="mock"
+            ),
+            node_display=self.view.node_display(workflow.graph),
+            layout=self.view.layout(workflow.graph),
         )

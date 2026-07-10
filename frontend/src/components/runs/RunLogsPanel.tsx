@@ -73,6 +73,18 @@ export function RunLogsPanel({ run }: RunLogsPanelProps) {
 function normalizeLogs(run?: Run | null): RunLog[] {
   if (!run) return [];
   if (run.logs.length) return run.logs;
+  if (run.timeline?.length) {
+    return run.timeline.map((entry) => ({
+      timestamp: entry.timestamp ?? undefined,
+      node_id: entry.node_id,
+      severity: entry.severity ?? "info",
+      message: entry.message,
+      details: {
+        status: entry.status,
+        node: entry.name
+      }
+    }));
+  }
   return run.nodes.map((node) => ({
     timestamp: node.completed_at ?? node.started_at ?? undefined,
     node_id: node.node_id,

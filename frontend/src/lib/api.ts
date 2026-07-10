@@ -15,6 +15,8 @@ export class FlowPilotApiError extends Error implements ApiError {
   status: number;
   code: string;
   details?: Record<string, unknown>;
+  severity?: string;
+  retryable?: boolean;
 
   constructor(error: ApiError) {
     super(error.message);
@@ -22,6 +24,8 @@ export class FlowPilotApiError extends Error implements ApiError {
     this.status = error.status;
     this.code = error.code;
     this.details = error.details;
+    this.severity = error.severity;
+    this.retryable = error.retryable;
   }
 }
 
@@ -59,7 +63,9 @@ function normalizeApiError(status: number, payload: unknown): ApiError {
       details:
         error.details && typeof error.details === "object"
           ? (error.details as Record<string, unknown>)
-          : undefined
+          : undefined,
+      severity: typeof error.severity === "string" ? error.severity : undefined,
+      retryable: typeof error.retryable === "boolean" ? error.retryable : undefined
     };
   }
   return {

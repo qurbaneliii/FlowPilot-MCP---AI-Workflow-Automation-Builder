@@ -12,11 +12,12 @@ import { EmptyState } from "@/components/layout/EmptyState";
 import { WorkflowNode } from "./WorkflowNode";
 import { mapWorkflowToReactFlow, type FlowNodeData } from "@/lib/workflowMapper";
 import type { Run } from "@/types/run";
-import type { WorkflowGraph } from "@/types/workflow";
+import type { GeneratedWorkflow, WorkflowGraph } from "@/types/workflow";
 import { Crosshair, GitBranch, Maximize2 } from "lucide-react";
 
 interface WorkflowCanvasProps {
   graph?: WorkflowGraph | null;
+  workflow?: GeneratedWorkflow | null;
   run?: Run | null;
   isLoading?: boolean;
   selectedNodeId?: string | null;
@@ -35,6 +36,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
 
 function WorkflowCanvasInner({
   graph,
+  workflow,
   run,
   isLoading = false,
   selectedNodeId,
@@ -43,7 +45,10 @@ function WorkflowCanvasInner({
   const { fitView } = useReactFlow();
   const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | null>(null);
   const activeSelectedNodeId = selectedNodeId ?? internalSelectedNodeId;
-  const mapped = useMemo(() => mapWorkflowToReactFlow(graph, run), [graph, run]);
+  const mapped = useMemo(
+    () => mapWorkflowToReactFlow(graph, run, workflow),
+    [graph, run, workflow]
+  );
   const statusSummary = useMemo(() => {
     const statuses = new Map<string, number>();
     mapped.nodes.forEach((node) => {

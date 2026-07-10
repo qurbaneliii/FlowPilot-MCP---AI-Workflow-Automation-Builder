@@ -11,6 +11,7 @@ FlowPilot MCP is an AI Workflow Automation Builder: a natural-language-to-execut
 - Phase 4: complete locally. The agent abstraction layer is implemented with Planner, Validator, Executor, Repo Analyzer, README Reviewer, Issue Generator, and LinkedIn Draft agents, strict Pydantic outputs, versioned prompts, fake/unavailable/real backend modes, retry/timeout wrapping, and validation reprompt handling.
 - Phase 7: complete locally. The Next.js frontend now provides a polished FlowPilot dashboard for workflow generation, React Flow graph inspection, run polling, approval decisions, logs, node outputs, and rendered artifact viewers.
 - Phase 7 UI refinement: complete locally. The frontend now uses a staged generate/workspace experience with a dedicated workflow canvas, contextual approval/run panel, and lower tabs for reports, logs, and node results.
+- Backend UI alignment: complete locally. The API now returns UI-friendly workflow/run summaries, node display metadata, timeline entries, approval panel data, artifact tab availability, `ui_state`, structured error severity/retry hints, and health labels that distinguish blocking failures from local mock/in-memory modes.
 
 Completed pieces:
 
@@ -26,6 +27,7 @@ Real in this phase:
 
 - The backend service starts and serves `/api/v1/health`.
 - The frontend service starts and renders the FlowPilot dashboard. It can generate a workflow, start a run, poll status, resolve approvals, and render generated artifacts against the current local API.
+- Backend API responses preserve raw node outputs and detailed artifact content for debugging while adding typed summaries for the refined frontend experience.
 - PostgreSQL runs in Docker Compose and is checked by the health endpoint when `DATABASE_URL` is configured.
 - Workflow graph validation and execution are real as a standalone in-memory domain module. This includes duplicate/dangling/cycle validation, deterministic topological sort, state transitions, retry/timeout handling, cascading skips, and approval pause/resume. It is currently exercised by test fixtures in `backend/tests/fixtures/fake_node_handlers.py`; it is not yet wired to persistence, the API layer, real node handlers, MCP clients, or agents.
 - Persistence models, migrations, repository ports, and SQLAlchemy repository implementations are present. Integration tests are written for real PostgreSQL and run under CI with a Postgres service container; local execution depends on a reachable `TEST_DATABASE_URL` or `DATABASE_URL`.
@@ -38,6 +40,7 @@ Not implemented yet:
 - Final screenshot capture for `docs/screenshots/` after the stack is running
 
 If `OPENAI_API_KEY` is missing, health reports OpenAI as `not_configured`. If `OPENAI_MCP_SERVER_URL` is missing, the OpenAI MCP client uses explicit unavailable mode rather than silently returning fake tool results.
+For the dashboard, health also includes `services` and `ui` labels such as `Backend connected`, `Mock MCP`, `Fake agent mode`, and non-blocking `Memory mode`.
 
 ## Demo Flow
 
@@ -52,6 +55,7 @@ Use the frontend at <http://localhost:3000> for the primary MVP walkthrough:
 
 Screenshot placeholders live in `docs/screenshots/` so README and portfolio captures have a stable destination.
 The active workflow screen prioritizes the canvas first, then shows approval, reports, logs, and node outputs through contextual panels and tabs so demo screenshots stay readable.
+The frontend uses backend `ui_state.recommended_tab`, run summaries, approval data, and artifact tab availability to avoid brittle parsing and contradictory empty states.
 
 ## Quickstart
 

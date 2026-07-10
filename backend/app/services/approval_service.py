@@ -60,10 +60,16 @@ class ApprovalService:
         await self.artifacts.persist_from_run(updated)
         from app.services.run_query_service import RunQueryService
 
+        run = await RunQueryService().get_run(record.run_id)
         return ApprovalDecisionResponse(
             approval_id=approval_id,
+            status="approved",
             decision="approved",
-            run=await RunQueryService().get_run(record.run_id),
+            run_id=record.run_id,
+            message="Approval recorded. Workflow will resume.",
+            run_status=run.status,
+            next_poll_recommended=True,
+            run=run,
         )
 
     async def reject(
@@ -100,10 +106,16 @@ class ApprovalService:
         await self.artifacts.persist_from_run(updated)
         from app.services.run_query_service import RunQueryService
 
+        run = await RunQueryService().get_run(record.run_id)
         return ApprovalDecisionResponse(
             approval_id=approval_id,
+            status="rejected",
             decision="rejected",
-            run=await RunQueryService().get_run(record.run_id),
+            run_id=record.run_id,
+            message="Approval rejected. GitHub issue creation will be skipped.",
+            run_status=run.status,
+            next_poll_recommended=True,
+            run=run,
         )
 
 

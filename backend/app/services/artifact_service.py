@@ -72,11 +72,14 @@ def _to_response(record: ArtifactRecord) -> ArtifactResponse:
         artifact_id=str(payload.get("artifact_id") or record.id),
         run_id=record.run_id,
         artifact_type=str(payload.get("artifact_type") or record.type),
+        type=str(payload.get("artifact_type") or record.type),
         filename=str(payload.get("filename") or f"{record.type}.md"),
+        title=_artifact_title(str(payload.get("artifact_type") or record.type)),
         content=str(payload.get("content") or ""),
         created_at=_coerce_datetime(payload.get("created_at") or record.created_at),
         mode=payload.get("mode"),
         source_node_id=payload.get("source_node_id"),
+        display=_artifact_display(str(payload.get("artifact_type") or record.type)),
     )
 
 
@@ -84,3 +87,27 @@ def _coerce_datetime(value: Any) -> datetime:
     if isinstance(value, datetime):
         return value
     return datetime.fromisoformat(str(value))
+
+
+def _artifact_title(artifact_type: str) -> str:
+    return {
+        "repo_audit_report": "Repository audit report",
+        "readme_improvement_plan": "README improvement plan",
+        "github_issue_drafts": "GitHub issue drafts",
+        "linkedin_post_draft": "LinkedIn demo post",
+    }.get(artifact_type, artifact_type.replace("_", " ").title())
+
+
+def _artifact_display(artifact_type: str) -> dict[str, Any]:
+    tab = {
+        "repo_audit_report": "audit",
+        "readme_improvement_plan": "readme",
+        "github_issue_drafts": "issues",
+        "linkedin_post_draft": "linkedin",
+    }.get(artifact_type, "reports")
+    badge = (
+        "Draft, not published"
+        if artifact_type == "linkedin_post_draft"
+        else "Generated artifact"
+    )
+    return {"tab": tab, "empty": False, "copyable": True, "badge": badge}

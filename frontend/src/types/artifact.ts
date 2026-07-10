@@ -24,11 +24,19 @@ export interface Artifact {
   artifact_id: string;
   run_id: string;
   artifact_type: ArtifactType;
+  type?: ArtifactType;
   filename: string;
+  title?: string | null;
   content: string;
   created_at: string;
   mode?: string | null;
   source_node_id?: string | null;
+  display?: {
+    tab?: string;
+    empty?: boolean;
+    copyable?: boolean;
+    badge?: string;
+  };
 }
 
 export interface AuditFinding {

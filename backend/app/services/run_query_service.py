@@ -1,13 +1,9 @@
 from datetime import datetime
 
 from app.core.api_errors import ApiError
-from app.schemas.run import (
-    NodeRunResponse,
-    PendingApprovalResponse,
-    RunListResponse,
-    RunResponse,
-)
+from app.schemas.run import RunListResponse, RunResponse
 from app.services.artifact_service import ArtifactService
+from app.services.run_view_service import RunViewService, infer_mode
 from app.services.store import STORE
 from app.workflow.state import RunState
 
@@ -15,6 +11,7 @@ from app.workflow.state import RunState
 class RunQueryService:
     def __init__(self) -> None:
         self.artifacts = ArtifactService()
+        self.view = RunViewService()
 
     async def get_run(self, run_id: str) -> RunResponse:
         run_state = STORE.runs.get(run_id)
@@ -32,72 +29,49 @@ class RunQueryService:
 
     async def _to_response(self, run_state: RunState) -> RunResponse:
         artifacts = await self.artifacts.list_for_run(run_state.run_id)
-        nodes = [
-            NodeRunResponse(
-                node_id=node_id,
-                status=state.status.value,
-                output=state.output,
-                error=state.error,
-                retry_count=state.retry_count,
-                started_at=state.started_at,
-                completed_at=state.completed_at,
-            )
-            for node_id, state in run_state.node_states.items()
-        ]
+        mode = infer_mode(run_state)
+        nodes = self.view.nodes(run_state)
+        pending_approval = self.view.pending_approval(run_state)
+        approval = self.view.approval_panel(pending_approval, mode=mode)
         errors = [
             {"node_id": node_id, **(state.error or {})}
             for node_id, state in run_state.node_states.items()
             if state.error
         ]
+        started_at = _started_at(run_state)
+        completed_at = _completed_at(run_state)
+        summary = self.view.run_summary(
+            run_state,
+            artifacts=artifacts,
+            mode=mode,
+            started_at=started_at,
+            completed_at=completed_at,
+        )
         return RunResponse(
             run_id=run_state.run_id,
             workflow_id=STORE.run_workflows.get(run_state.run_id, ""),
             status=run_state.status,
-            started_at=_started_at(run_state),
-            completed_at=_completed_at(run_state),
+            summary=summary,
+            started_at=started_at,
+            completed_at=completed_at,
             nodes=nodes,
+            timeline=self.view.timeline(run_state),
+            approval=approval,
             logs=[],
             node_outputs={
                 node_id: state.output
                 for node_id, state in run_state.node_states.items()
             },
+            node_results=self.view.node_results(run_state),
             errors=errors,
             artifacts=artifacts,
-            pending_approval=_pending_approval(run_state),
-            mode=_mode(run_state),
+            artifact_tabs=self.view.artifact_tabs(artifacts),
+            pending_approval=pending_approval,
+            ui_state=self.view.ui_state(run_state, summary=summary, approval=approval),
+            inspector=self.view.inspector(run_state),
+            layout=self.view.layout(run_state.graph).model_dump(mode="json"),
+            mode=mode,
         )
-
-
-def _pending_approval(run_state: RunState) -> PendingApprovalResponse | None:
-    for approval_id, record in STORE.approvals.items():
-        if record.run_id != run_state.run_id or record.status != "pending":
-            continue
-        node_id = STORE.approval_nodes[approval_id]
-        output = run_state.node_states[node_id].output or {}
-        return PendingApprovalResponse(
-            approval_id=approval_id,
-            status=record.status,
-            node_id=node_id,
-            approval_summary=output.get("approval_summary"),
-            issue_drafts=output.get("issue_drafts", []),
-            target_repository=output.get("target_repository"),
-            risk_level=output.get("risk_level"),
-            downstream_action=output.get("downstream_action"),
-            node_to_resume_after_approval=output.get("node_to_resume_after_approval"),
-        )
-    return None
-
-
-def _mode(run_state: RunState) -> str | None:
-    for state in run_state.node_states.values():
-        output = state.output or {}
-        mode = output.get("mode") if isinstance(output, dict) else None
-        if isinstance(mode, str):
-            return mode
-        snapshot = output.get("repo_snapshot") if isinstance(output, dict) else None
-        if isinstance(snapshot, dict) and isinstance(snapshot.get("mode"), str):
-            return snapshot["mode"]
-    return None
 
 
 def _started_at(run_state: RunState) -> datetime | None:

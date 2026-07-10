@@ -38,6 +38,9 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
       ),
     [run?.artifacts]
   );
+  const isAvailable = (artifactType: string) =>
+    run?.artifact_tabs?.[artifactType]?.available ??
+    artifactByType.has(artifactType);
   const audit = extractAudit(run);
   const issueDrafts = extractIssueDrafts(run);
   const linkedinDraft = extractLinkedInDraft(run);
@@ -61,8 +64,10 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
       </div>
       {activeTab === "audit" && (
         <div className="space-y-4">
-          <GitHubAuditViewer audit={audit} />
-          {artifactByType.has("repo_audit_report") && (
+          {(audit || !isAvailable("repo_audit_report")) && (
+            <GitHubAuditViewer audit={audit} />
+          )}
+          {isAvailable("repo_audit_report") && (
             <MarkdownArtifactViewer
               artifact={artifactByType.get("repo_audit_report") as Artifact | undefined}
               fallbackTitle="Repo Audit Report"
@@ -78,8 +83,10 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
       )}
       {activeTab === "issues" && (
         <div className="space-y-4">
-          <IssueDraftsViewer issues={issueDrafts} />
-          {artifactByType.has("github_issue_drafts") && (
+          {(issueDrafts.length > 0 || !isAvailable("github_issue_drafts")) && (
+            <IssueDraftsViewer issues={issueDrafts} />
+          )}
+          {isAvailable("github_issue_drafts") && (
             <MarkdownArtifactViewer
               artifact={artifactByType.get("github_issue_drafts") as Artifact | undefined}
               fallbackTitle="GitHub Issue Drafts"
@@ -89,8 +96,10 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
       )}
       {activeTab === "linkedin" && (
         <div className="space-y-4">
-          <LinkedInDraftViewer draft={linkedinDraft} />
-          {artifactByType.has("linkedin_post_draft") && (
+          {(linkedinDraft || !isAvailable("linkedin_post_draft")) && (
+            <LinkedInDraftViewer draft={linkedinDraft} />
+          )}
+          {isAvailable("linkedin_post_draft") && (
             <MarkdownArtifactViewer
               artifact={artifactByType.get("linkedin_post_draft") as Artifact | undefined}
               fallbackTitle="LinkedIn Draft"

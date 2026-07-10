@@ -15,7 +15,10 @@ export function RunSummaryPanel({ run }: RunSummaryPanelProps) {
       </div>
     );
   }
-  const completed = run.nodes.filter((node) => node.status === "completed").length;
+  const completed =
+    run.summary?.nodes_completed ??
+    run.nodes.filter((node) => node.status === "completed").length;
+  const total = run.summary?.nodes_total ?? run.nodes.length;
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -24,16 +27,21 @@ export function RunSummaryPanel({ run }: RunSummaryPanelProps) {
             Run {formatShortId(run.run_id)}
           </p>
           <h3 className="mt-1 text-sm font-semibold text-neutral-50">
-            Workflow execution
+            {run.summary?.title ?? "Workflow execution"}
           </h3>
+          {run.summary?.next_required_action && (
+            <p className="mt-1 text-xs text-neutral-400">
+              {run.summary.next_required_action}
+            </p>
+          )}
         </div>
         <RunStatusBadge status={run.status} />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Metric icon={GitBranch} label="Nodes complete" value={`${completed}/${run.nodes.length}`} />
-        <Metric icon={ShieldAlert} label="Mode" value={run.mode ?? "pending"} />
-        <Metric icon={FileText} label="Artifacts" value={String(run.artifacts.length)} />
-        <Metric icon={Clock3} label="Started" value={formatTimestamp(run.started_at)} />
+        <Metric icon={GitBranch} label="Nodes complete" value={`${completed}/${total}`} />
+        <Metric icon={ShieldAlert} label="Mode" value={run.summary?.mode ?? run.mode ?? "pending"} />
+        <Metric icon={FileText} label="Artifacts" value={String(run.summary?.artifacts_count ?? run.artifacts.length)} />
+        <Metric icon={Clock3} label="Started" value={formatTimestamp(run.summary?.started_at ?? run.started_at)} />
       </div>
     </div>
   );

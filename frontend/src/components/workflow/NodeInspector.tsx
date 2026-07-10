@@ -27,6 +27,10 @@ export function NodeInspector({ graph, run, selectedNodeId }: NodeInspectorProps
     );
   }
   const runNode = run?.nodes.find((candidate) => candidate.node_id === node.id);
+  const backendSummary =
+    runNode?.display?.summary ??
+    runNode?.output_summary?.summary ??
+    run?.node_results?.find((item) => item.node_id === node.id)?.summary;
   const meta = getNodeTypeMeta(node.type);
   const Icon = meta.icon;
   return (
@@ -56,7 +60,7 @@ export function NodeInspector({ graph, run, selectedNodeId }: NodeInspectorProps
         <div className="rounded-md border border-neutral-800 bg-neutral-950/70 p-3 text-sm leading-6 text-neutral-300">
           {runNode?.error
             ? String(runNode.error.message ?? "Node failed.")
-            : summarizeUnknown(runNode?.output)}
+            : backendSummary ?? summarizeUnknown(runNode?.output)}
         </div>
       </div>
     </div>

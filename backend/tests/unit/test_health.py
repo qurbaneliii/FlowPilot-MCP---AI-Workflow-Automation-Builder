@@ -100,11 +100,13 @@ def test_health_endpoint_returns_200_when_dependencies_degraded(
     response = client.get("/api/v1/health")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ok",
-        "version": "test",
-        "dependencies": {"database": "error", "openai": "not_configured"},
-    }
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"] == "test"
+    assert body["dependencies"] == {"database": "error", "openai": "not_configured"}
+    assert body["services"]["database"]["label"] == "Memory mode"
+    assert body["services"]["database"]["blocking"] is False
+    assert body["ui"]["database_warning_blocks_demo"] is False
 
 
 def test_health_endpoint_returns_200_when_dependencies_healthy(
@@ -126,8 +128,34 @@ def test_health_endpoint_returns_200_when_dependencies_healthy(
     response = client.get("/api/v1/health")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ok",
-        "version": "test",
-        "dependencies": {"database": "ok", "openai": "ok"},
-    }
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"] == "test"
+    assert body["dependencies"] == {"database": "ok", "openai": "ok"}
+    assert body["services"]["backend"]["label"] == "Backend connected"
+    assert body["services"]["database"]["label"] == "Database connected"
+
+
+def test_health_response_contains_ui_status_labels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def degraded_database() -> str:
+        return "error"
+
+    async def unconfigured_openai() -> str:
+        return "not_configured"
+
+    monkeypatch.setattr(health_module, "check_database", degraded_database)
+    monkeypatch.setattr(health_module, "check_openai", unconfigured_openai)
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(app_version="test")
+    )
+
+    response = TestClient(create_app()).get("/api/v1/health")
+    body = response.json()
+
+    assert body["services"]["backend"]["label"] == "Backend connected"
+    assert body["services"]["database"]["label"] == "Memory mode"
+    assert body["services"]["mcp"]["label"] == "Mock MCP"
+    assert body["services"]["openai"]["label"] == "Fake agent mode"
+    assert body["ui"]["storage_mode_label"] == "Memory mode"

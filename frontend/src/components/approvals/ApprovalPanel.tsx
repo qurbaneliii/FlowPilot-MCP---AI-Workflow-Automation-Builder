@@ -4,11 +4,11 @@ import { Check, X } from "lucide-react";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { ApprovalActionPreview } from "./ApprovalActionPreview";
-import type { Approval } from "@/types/approval";
+import type { Approval, ApprovalPanelData } from "@/types/approval";
 import { ShieldCheck } from "lucide-react";
 
 interface ApprovalPanelProps {
-  approval?: Approval | null;
+  approval?: Approval | ApprovalPanelData | null;
   mode?: string | null;
   loadingDecision?: "approve" | "reject" | null;
   error?: string | null;
@@ -36,6 +36,13 @@ export function ApprovalPanel({
     );
   }
   const isLoading = Boolean(loadingDecision);
+  const issueDrafts = "issue_drafts" in approval ? approval.issue_drafts : [];
+  const title =
+    "title" in approval ? approval.title : "Human approval required";
+  const description =
+    "description" in approval
+      ? approval.description
+      : "FlowPilot paused because this step can create external GitHub issues.";
   return (
     <div className="space-y-4">
       <div>
@@ -43,16 +50,15 @@ export function ApprovalPanel({
           Human approval required
         </p>
         <h3 className="mt-1 text-lg font-semibold text-neutral-50">
-          Review before creating GitHub issues
+          {title}
         </h3>
         <p className="mt-2 text-sm leading-6 text-neutral-300">
-          FlowPilot paused because this step can create external GitHub issues.
-          Review the drafts and approve only if the action matches the audit intent.
+          {description}
         </p>
       </div>
       <ApprovalActionPreview approval={approval} mode={mode} />
       <div className="space-y-2">
-        {approval.issue_drafts.slice(0, 3).map((issue) => (
+        {issueDrafts.slice(0, 3).map((issue) => (
           <div key={issue.title} className="rounded-md border border-neutral-800 bg-neutral-950/55 p-3">
             <p className="text-sm font-medium text-neutral-100">{issue.title}</p>
             <p className="mt-1 line-clamp-2 text-sm leading-6 text-neutral-400">
