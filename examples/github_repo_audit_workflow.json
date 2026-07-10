@@ -4,7 +4,10 @@
       "id": "manual_trigger",
       "type": "manual_trigger",
       "name": "Manual Trigger",
-      "config": {},
+      "config": {
+        "source_prompt": "Audit this GitHub repository and draft guarded improvement issues.",
+        "repo_url": "https://github.com/example/repo"
+      },
       "dependencies": []
     },
     {
