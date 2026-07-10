@@ -16,12 +16,13 @@ This roadmap is intentionally honest about the current MVP. FlowPilot is a serio
 - Next.js workflow dashboard
 - Backend and frontend test/check commands
 - Docker Compose stack definition and verification scripts
+- Local browser screenshots for the mock-mode MVP flow
 
 ## Near-Term Improvements
 
 - Wire API runtime to durable PostgreSQL repositories instead of in-process store state.
 - Add persistent background worker execution rather than in-process background tasks.
-- Capture final screenshots and `docs/screenshots/demo.gif`.
+- Capture `docs/screenshots/demo.gif`.
 - Add a small seeded demo mode that can run without external credentials.
 - Add more workflow examples and fixture snapshots.
 - Add browser-based E2E tests for the full frontend flow.

@@ -268,11 +268,13 @@ docker compose config --quiet
 
 The verification script builds and starts PostgreSQL, backend, and frontend, waits for backend health with `database: "ok"`, then checks the frontend root returns HTTP 200.
 
+Final local hardening note from 2026-07-10: `docker compose config --quiet` passed, but `docker info` could not connect to Docker Desktop's Linux engine. The full Docker stack runtime was not verified locally in that environment.
+
 ## Known Limitations
 
 - The API MVP uses in-process store state for workflow/run/query services; SQLAlchemy repositories and migrations exist but are not the primary API runtime path yet.
 - Real OpenAI and external MCP/GitHub credentials are optional and not exercised in tests.
-- Browser screenshot/GIF assets are placeholders until a final recorded demo is captured.
+- Browser screenshots are captured from the local mock-mode workflow. The demo GIF remains pending until it is recorded from the working app.
 - Authentication, multi-user tenancy, deployment hardening, queueing, and background worker isolation are future work.
 - The project is focused on a lightweight, auditable AI workflow MVP rather than a broad no-code automation suite.
 
@@ -283,21 +285,21 @@ The verification script builds and starts PostgreSQL, backend, and frontend, wai
 - Expand workflow templates beyond GitHub repository audit.
 - Add production-ready background execution and resumability.
 - Add real MCP credential walkthroughs.
-- Capture final screenshots and a short demo GIF.
+- Capture a short demo GIF.
 - Add deployment documentation after a real hosted environment exists.
 
 ## Screenshots
 
-Place final screenshots in `docs/screenshots/`:
+Captured local browser screenshots are stored in `docs/screenshots/`:
 
-- `initial-state.png`
-- `generated-workflow-canvas.png`
-- `waiting-for-approval.png`
-- `completed-reports.png`
-- `logs-node-results.png`
+- `01-start-workflow.png`
+- `02-generated-workflow-canvas.png`
+- `03-waiting-for-approval.png`
+- `04-completed-reports.png`
+- `05-logs-node-results.png`
 
 ## Demo GIF
 
-Placeholder: `docs/screenshots/demo.gif`
+Pending target: `docs/screenshots/demo.gif`
 
 The GIF should show workflow generation, run start, approval, and final artifacts. Do not add a GIF until it is captured from the working app.

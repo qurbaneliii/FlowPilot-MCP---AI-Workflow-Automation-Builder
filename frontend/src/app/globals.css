@@ -42,7 +42,13 @@ body {
 }
 
 html {
+  max-width: 100%;
+  overflow-x: hidden;
   scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 button,
@@ -294,6 +300,7 @@ textarea:disabled {
 
 .canvas-shell {
   position: relative;
+  height: 640px;
   min-height: 640px;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
@@ -305,6 +312,7 @@ textarea:disabled {
 
 @media (min-width: 1536px) {
   .canvas-shell {
+    height: 740px;
     min-height: 740px;
   }
 }
@@ -327,12 +335,14 @@ textarea:disabled {
 }
 
 .canvas-shell .react-flow {
+  height: 640px;
   min-height: 640px;
   padding-top: 3.5rem;
 }
 
 @media (min-width: 1536px) {
   .canvas-shell .react-flow {
+    height: 740px;
     min-height: 740px;
   }
 }
@@ -396,6 +406,7 @@ textarea:disabled {
 
   .canvas-shell,
   .canvas-shell .react-flow {
+    height: 520px;
     min-height: 520px;
   }
 }

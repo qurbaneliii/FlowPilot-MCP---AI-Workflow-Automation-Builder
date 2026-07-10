@@ -91,6 +91,10 @@ The SQLAlchemy persistence layer has integration tests for:
 
 These tests require a reachable PostgreSQL test database and are skipped in local runs when no test database is available.
 
+Local runs without `TEST_DATABASE_URL` or `DATABASE_URL` skip 10 Postgres integration tests with the reason `No TEST_DATABASE_URL or DATABASE_URL configured for Postgres tests`.
+
+CI provides a PostgreSQL service container, creates `flowpilot_test`, runs Alembic migrations against `TEST_DATABASE_URL`, and treats any skipped integration test as a CI failure. This prevents Postgres integration coverage from passing silently when the service is unreachable.
+
 ## Frontend Checks
 
 Frontend quality is verified with:
@@ -104,6 +108,8 @@ npm run build
 
 Current code includes typed API models for health, workflow, run, approval, artifacts, structured errors, and backend-driven UI state.
 
+The 2026-07-10 visual acceptance pass also exercised the local browser flow at 1440px, 1366px, and 1280px and captured the five screenshots under `docs/screenshots/`.
+
 ## Stack Verification
 
 Docker verification is performed with:
@@ -115,3 +121,5 @@ docker compose config --quiet
 ```
 
 If Docker is unavailable, report that explicitly rather than claiming stack verification.
+
+Final local hardening on 2026-07-10: `docker info` failed because the Docker daemon was unavailable, while `docker compose config --quiet` passed. The full Docker stack was therefore not runtime-verified locally.

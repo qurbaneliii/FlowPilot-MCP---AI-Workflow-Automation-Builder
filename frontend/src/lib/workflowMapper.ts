@@ -70,12 +70,6 @@ export function mapWorkflowToReactFlow(
   const displayById = new Map(
     (workflow?.node_display ?? []).map((node) => [node.id, node])
   );
-  const layoutById = new Map(
-    (run?.layout?.nodes ?? workflow?.layout?.nodes ?? []).map((node) => [
-      node.id,
-      node
-    ])
-  );
   const depthMap = getDepthMap(workflowNodes);
   const columns = new Map<number, WorkflowNode[]>();
   workflowNodes.forEach((node) => {
@@ -88,14 +82,13 @@ export function mapWorkflowToReactFlow(
     const siblingIndex = siblings.findIndex((sibling) => sibling.id === node.id);
     const centeredOffset = siblingIndex - (siblings.length - 1) / 2;
     const runNode = runNodes.get(node.id);
-    const backendPosition = layoutById.get(node.id);
     const display = displayById.get(node.id);
     return {
       id: node.id,
       type: "flowpilotNode",
       position: {
-        x: backendPosition?.x ?? centeredOffset * 340,
-        y: backendPosition?.y ?? depth * 156
+        x: centeredOffset * 360,
+        y: depth * 172
       },
       data: {
         workflowNode: node,

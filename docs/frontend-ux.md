@@ -132,3 +132,5 @@ Manual smoke path:
 6. Confirm approval panel appears.
 7. Approve.
 8. Confirm reports appear and no generated artifact tab shows an empty state.
+
+Final local visual acceptance on 2026-07-10 used a browser-driven mock-mode flow at 1440px, 1366px, and 1280px. It verified the start screen, generated workflow screen, dedicated canvas, all 9 nodes visible, no node overlap, no canvas clipping, no minimap, no red Next.js issue overlay, run start, waiting-for-approval state, primary approval panel, approve mock issue creation, completed state, reports/artifacts, LinkedIn draft without contradictory empty state, readable logs, and human-readable node results.
