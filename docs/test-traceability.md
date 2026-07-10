@@ -109,3 +109,59 @@ This document maps specification-required test items to concrete test functions.
 | 14 | LinkedIn draft schema rejects publish claims | `test_linkedin_draft_agent_does_not_claim_publish_action` | Passing |
 | 15 | Agent prompt files are versioned and non-placeholder | `test_agent_prompt_files_are_not_placeholders` | Passing |
 | 16 | Agent output schemas reject extra fields | `test_agent_output_schemas_reject_extra_fields_where_appropriate` | Passing |
+
+## Phase 5 Production Node Handler Matrix
+
+| ID | Required behavior | Test function | Status |
+|---|---|---|---|
+| 1 | Manual trigger success | `test_manual_trigger_success` | Passing |
+| 2 | GitHub repo reader mock success | `test_github_repo_reader_success_mock` | Passing |
+| 3 | GitHub repo reader failure controlled | `test_github_repo_reader_failure_becomes_node_failure` | Passing |
+| 4 | GitHub repo reader timeout controlled | `test_github_repo_reader_timeout_becomes_node_failure` | Passing |
+| 5 | Repo analyzer success | `test_repo_analyzer_success` | Passing |
+| 6 | Repo analyzer validation failure controlled | `test_repo_analyzer_agent_validation_failure_becomes_node_failure` | Passing |
+| 7 | README reviewer success | `test_readme_reviewer_success` | Passing |
+| 8 | Missing README handled | `test_readme_reviewer_missing_readme` | Passing |
+| 9 | Issue draft generation success | `test_issue_draft_generator_success` | Passing |
+| 10 | Zero findings returns empty issues | `test_issue_draft_generator_zero_findings` | Passing |
+| 11 | Human approval pauses | `test_human_approval_pauses` | Passing |
+| 12 | Human approval request contains record payload | `test_human_approval_creates_approval_record` | Passing |
+| 13 | Issue creator requires approval | `test_github_issue_creator_requires_approval` | Passing |
+| 14 | Issue creator rejects missing approval | `test_github_issue_creator_rejects_missing_approval` | Passing |
+| 15 | Issue creator rejects rejected approval | `test_github_issue_creator_rejects_rejected_approval` | Passing |
+| 16 | Issue creator idempotency | `test_github_issue_creator_idempotency` | Passing |
+| 17 | Issue creator mock mode explicit | `test_github_issue_creator_mock_mode_explicit` | Passing |
+| 18 | LinkedIn draft generation success | `test_linkedin_draft_generator_success` | Passing |
+| 19 | LinkedIn node never publishes | `test_linkedin_draft_generator_never_publishes` | Passing |
+| 20 | Markdown report artifacts emitted | `test_markdown_report_writer_persists_artifacts` | Passing |
+| 21 | Condition true branch | `test_condition_true_branch` | Passing |
+| 22 | Condition false branch | `test_condition_false_branch` | Passing |
+| 23 | Function calls rejected | `test_condition_rejects_function_calls` | Passing |
+| 24 | Attribute access rejected | `test_condition_rejects_attribute_access` | Passing |
+| 25 | Imports rejected | `test_condition_rejects_imports` | Passing |
+| 26 | Unsafe builtins rejected | `test_condition_rejects_unsafe_builtins` | Passing |
+| 27 | Names resolve only from context | `test_condition_resolves_names_only_from_context` | Passing |
+| 28 | Raw agent exception sanitized | `test_raw_agent_exception_converted_to_failed_result` | Passing |
+| 29 | Raw MCP exception sanitized | `test_raw_mcp_exception_converted_to_failed_result` | Passing |
+| 30 | Example workflow uses registered types | `test_example_workflow_uses_only_registered_node_types` | Passing |
+
+## Phase 6 API and Backend E2E Matrix
+
+| ID | Required behavior | Test function | Status |
+|---|---|---|---|
+| 1 | Generate workflow success | `test_generate_workflow_success` | Passing |
+| 2 | Invalid GitHub URL rejected | `test_generate_workflow_invalid_repo_url` | Passing |
+| 3 | Validation failure structured | `test_generate_workflow_validation_failure` | Passing |
+| 4 | Get workflow success | `test_get_workflow_success` | Passing |
+| 5 | Missing workflow returns 404 | `test_get_missing_workflow_returns_404` | Passing |
+| 6 | Run workflow creates run | `test_run_workflow_starts_and_creates_run` | Passing |
+| 7 | Get run returns node statuses | `test_get_run_returns_node_statuses` | Passing |
+| 8 | Run pauses at approval | `test_run_pauses_at_approval` | Passing |
+| 9 | Approve resumes run | `test_approve_resumes_run` | Passing |
+| 10 | Reject skips issue creator | `test_reject_skips_issue_creator` | Passing |
+| 11 | Double approve controlled | `test_approve_double_call_controlled` | Passing |
+| 12 | Artifacts appear in run response | `test_artifacts_appear_in_run_response` | Passing |
+| 13 | Route handlers are thin | `test_route_handlers_are_thin` | Passing |
+| 14 | API errors are structured | `test_api_errors_are_structured` | Passing |
+| 15 | Health endpoint still passes | `test_health_endpoint_still_passes` | Passing |
+| 16 | Full backend E2E approval completion | `test_backend_e2e_github_repo_audit_approval_completion` | Passing |

@@ -70,9 +70,10 @@ class WorkflowEngine:
             )
 
         if decision == "approved":
+            existing_output = dict(node_state.output or {})
             self._transition(node_state, NodeStatus.RUNNING)
             self._transition(node_state, NodeStatus.COMPLETED)
-            node_state.output = {"decision": "approved"}
+            node_state.output = {**existing_output, "decision": "approved"}
             node_state.completed_at = self._now()
             order = validate_and_sort(run_state.graph)
             self._set_run_status(run_state, "running")

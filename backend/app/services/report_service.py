@@ -1,1 +1,4 @@
-"""Report service is implemented in Phase 6."""
+from app.services.artifact_service import ArtifactService
+
+
+__all__ = ["ArtifactService"]

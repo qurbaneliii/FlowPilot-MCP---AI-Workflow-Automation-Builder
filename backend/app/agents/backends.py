@@ -224,7 +224,12 @@ def github_repo_audit_graph(repo_url: str) -> dict[str, Any]:
         (
             "markdown_report_writer",
             "markdown_report_writer",
-            ["github_issue_creator", "linkedin_draft_generator"],
+            [
+                "ai_repo_analyzer",
+                "readme_reviewer",
+                "issue_draft_generator",
+                "linkedin_draft_generator",
+            ],
         ),
     ]
     return {
