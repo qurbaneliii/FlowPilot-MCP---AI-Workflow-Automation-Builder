@@ -170,3 +170,33 @@ def test_health_response_contains_ui_status_labels(
     assert body["services"]["mcp"]["label"] == "Mock MCP"
     assert body["services"]["openai"]["label"] == "Fake agent mode"
     assert body["ui"]["storage_mode_label"] == "Memory mode"
+
+
+def test_health_contains_mode_explanations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(app_version="test")
+    )
+
+    body = TestClient(create_app()).get("/api/v1/health").json()
+
+    assert body["mode_explanations"]["mcp"]["mode"] == "mock"
+    assert "Safe local mode" in body["mode_explanations"]["mcp"]["description"]
+    assert body["mode_explanations"]["agent"]["label"] == "Fake Agent"
+    assert body["mode_explanations"]["storage"]["label"] == "Memory Mode"
+
+
+def test_demo_mode_banner_data_is_non_blocking(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        health_module, "get_settings", lambda: Settings(app_version="test")
+    )
+
+    body = TestClient(create_app()).get("/api/v1/health").json()
+
+    assert body["demo_mode"]["active"] is True
+    assert body["demo_mode"]["label"] == "Demo mode active"
+    assert body["services"]["mcp"]["severity"] == "info"
+    assert body["services"]["mcp"]["blocking"] is False

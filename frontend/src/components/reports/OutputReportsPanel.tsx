@@ -45,13 +45,16 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
   const issueDrafts = extractIssueDrafts(run);
   const linkedinDraft = extractLinkedInDraft(run);
   const activeDefinition = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const activeArtifact = Array.from(artifactByType.values()).find(
+    (artifact) => artifact.display?.tab === activeTab
+  );
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-md border border-accent-500/20 bg-accent-500/5 p-4">
         <div>
           <p className="kicker">Generated deliverable</p>
-          <h3 className="mt-1 text-base font-semibold text-neutral-50">{activeDefinition.label}</h3>
-          <p className="mt-1 text-sm leading-6 text-neutral-400">{activeDefinition.purpose}</p>
+          <h3 className="mt-1 text-base font-semibold text-neutral-50">{activeArtifact?.title ?? activeDefinition.label}</h3>
+          <p className="mt-1 text-sm leading-6 text-neutral-400">{activeArtifact?.purpose ?? activeDefinition.purpose}</p>
         </div>
         <span className="status-chip">{run?.artifacts.length ?? 0} artifacts ready</span>
       </div>

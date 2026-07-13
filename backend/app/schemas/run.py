@@ -3,6 +3,14 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.ui import (
+    CompletionSummaryResponse,
+    DemoModeResponse,
+    GuidedStepsResponse,
+    ModeExplanationsResponse,
+    NextActionResponse,
+)
+
 
 class RunWorkflowRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -48,6 +56,7 @@ class ArtifactResponse(BaseModel):
     type: str
     filename: str
     title: str | None = None
+    purpose: str | None = None
     content: str
     created_at: datetime
     mode: str | None = None
@@ -92,6 +101,11 @@ class RunResponse(BaseModel):
     inspector: dict[str, Any] = Field(default_factory=dict)
     layout: dict[str, Any] | None = None
     mode: str | None = None
+    guided_steps: GuidedStepsResponse
+    next_action: NextActionResponse
+    mode_explanations: ModeExplanationsResponse
+    demo_mode: DemoModeResponse
+    completion_summary: CompletionSummaryResponse | None = None
 
 
 class RunListResponse(BaseModel):

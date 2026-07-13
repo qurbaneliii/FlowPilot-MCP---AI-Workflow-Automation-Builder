@@ -26,6 +26,7 @@ export function WorkflowSummaryBar({
   onRun
 }: WorkflowSummaryBarProps) {
   const summary = getWorkflowSummary(graph, workflow);
+  const review = workflow?.workflow_review;
   return (
     <section className="summary-bar">
       <div className="min-w-0">
@@ -35,14 +36,16 @@ export function WorkflowSummaryBar({
           <StatusPill status={workflow?.validation.valid ? "completed" : "pending"} label={summary.statusLabel ?? "Validated"} />
           {run && <RunStatusBadge status={run.status} />}
         </div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">{summary.description}</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">
+          {review?.plain_english_summary ?? summary.description}
+        </p>
         <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-5">
           <span className="inline-flex items-center gap-1.5">
             <Github className="h-4 w-4 text-neutral-500" aria-hidden="true" />
             {(summary.repoUrl ?? repoUrl).replace("https://github.com/", "github.com/")}
           </span>
-          <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4 text-neutral-500" aria-hidden="true" />Reads repository files</span>
-          <span className="inline-flex items-center gap-1.5"><Pencil className="h-4 w-4 text-neutral-500" aria-hidden="true" />Writes issues after approval</span>
+          <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4 text-neutral-500" aria-hidden="true" />Reads {review?.reads.slice(0, 2).join(" and ").toLowerCase() ?? "repository files"}</span>
+          <span className="inline-flex items-center gap-1.5"><Pencil className="h-4 w-4 text-neutral-500" aria-hidden="true" />Writes {review?.writes[0]?.label.toLowerCase() ?? "issues"} after approval</span>
           <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-neutral-500" aria-hidden="true" />{summary.approvalRequired ? "Approval required" : "No approval gate"}</span>
           <span>{summary.nodeCount} nodes · {titleCase(summary.mode ?? mode ?? "mode pending")}</span>
         </div>

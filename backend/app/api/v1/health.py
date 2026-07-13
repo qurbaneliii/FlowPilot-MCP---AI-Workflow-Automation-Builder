@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.api.deps import engine
 from app.core.config import get_settings
+from app.schemas.ui import DemoModeResponse, ModeExplanationsResponse
+from app.services.ui_metadata import demo_mode, mode_explanations
 
 
 router = APIRouter()
@@ -33,6 +35,8 @@ class HealthResponse(BaseModel):
     services: dict[str, "HealthServiceStatus"]
     ui: "HealthUiStatus"
     storage: "HealthStorageStatus"
+    mode_explanations: ModeExplanationsResponse
+    demo_mode: DemoModeResponse
 
 
 class HealthServiceStatus(BaseModel):
@@ -122,6 +126,8 @@ async def health() -> HealthResponse:
             persistent=settings.effective_storage_mode == "postgres",
             reset_on_restart=settings.effective_storage_mode == "memory",
         ),
+        mode_explanations=mode_explanations(settings),
+        demo_mode=demo_mode(settings),
     )
 
 

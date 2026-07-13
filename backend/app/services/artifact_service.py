@@ -84,6 +84,7 @@ def _to_response(record: ArtifactRecord) -> ArtifactResponse:
         type=str(payload.get("artifact_type") or record.type),
         filename=str(payload.get("filename") or f"{record.type}.md"),
         title=_artifact_title(str(payload.get("artifact_type") or record.type)),
+        purpose=_artifact_purpose(str(payload.get("artifact_type") or record.type)),
         content=str(payload.get("content") or ""),
         created_at=_coerce_datetime(payload.get("created_at") or record.created_at),
         mode=payload.get("mode"),
@@ -100,11 +101,20 @@ def _coerce_datetime(value: Any) -> datetime:
 
 def _artifact_title(artifact_type: str) -> str:
     return {
-        "repo_audit_report": "Repository audit report",
-        "readme_improvement_plan": "README improvement plan",
-        "github_issue_drafts": "GitHub issue drafts",
-        "linkedin_post_draft": "LinkedIn demo post",
+        "repo_audit_report": "Repo Audit Report",
+        "readme_improvement_plan": "README Improvement Plan",
+        "github_issue_drafts": "GitHub Issue Drafts",
+        "linkedin_post_draft": "LinkedIn Draft",
     }.get(artifact_type, artifact_type.replace("_", " ").title())
+
+
+def _artifact_purpose(artifact_type: str) -> str:
+    return {
+        "repo_audit_report": "A concise repository quality audit with categorized findings and recommendations.",
+        "readme_improvement_plan": "A prioritized plan for improving repository documentation and onboarding.",
+        "github_issue_drafts": "Reviewable GitHub issue drafts generated from the audit findings.",
+        "linkedin_post_draft": "A professional post draft for sharing the repository improvement workflow.",
+    }.get(artifact_type, "A generated workflow deliverable ready for review.")
 
 
 def _artifact_display(artifact_type: str) -> dict[str, Any]:
@@ -119,7 +129,19 @@ def _artifact_display(artifact_type: str) -> dict[str, Any]:
         if artifact_type == "linkedin_post_draft"
         else "Generated artifact"
     )
-    return {"tab": tab, "empty": False, "copyable": True, "badge": badge}
+    return {
+        "tab": tab,
+        "empty": False,
+        "copyable": True,
+        "badge": badge,
+        "primary": artifact_type
+        in {
+            "repo_audit_report",
+            "readme_improvement_plan",
+            "github_issue_drafts",
+            "linkedin_post_draft",
+        },
+    }
 
 
 def _enrich_completed_artifact(

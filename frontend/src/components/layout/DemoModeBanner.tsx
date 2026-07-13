@@ -4,9 +4,10 @@ import type { HealthResponse } from "@/types/api";
 export function DemoModeBanner({ health }: { health?: HealthResponse | null }) {
   const services = health?.services;
   const isDemo =
-    services?.mcp?.status === "mock" ||
-    services?.openai?.label?.toLowerCase().includes("fake") ||
-    services?.database?.status === "memory";
+    health?.demo_mode?.active ??
+    (services?.mcp?.status === "mock" ||
+      services?.openai?.label?.toLowerCase().includes("fake") ||
+      services?.database?.status === "memory");
   if (!isDemo) return null;
 
   return (
@@ -14,7 +15,8 @@ export function DemoModeBanner({ health }: { health?: HealthResponse | null }) {
       <div className="demo-mode-banner">
         <Info className="h-4 w-4 shrink-0 text-accent-300" aria-hidden="true" />
         <p>
-          <strong>Demo mode active.</strong> Repository writes are safely mocked, AI responses are deterministic, and run history may reset when the backend restarts.
+          <strong>{health?.demo_mode?.label ?? "Demo mode active"}.</strong>{" "}
+          {health?.demo_mode?.description ?? "Repository writes are safely mocked, AI responses are deterministic, and run history may reset when the backend restarts."}
         </p>
       </div>
     </div>

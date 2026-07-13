@@ -58,7 +58,11 @@ export default function RunDetailPage() {
   return (
     <AppShell health={health} healthError={healthError} mode={runState.run?.mode}>
       <div className="space-y-6">
-        <GuidedStepper hasWorkflow runStatus={runState.run?.status} />
+        <GuidedStepper
+          hasWorkflow
+          runStatus={runState.run?.status}
+          guidedSteps={runState.run?.guided_steps ?? workflow?.guided_steps}
+        />
         <NextActionCard hasWorkflow run={runState.run} />
         <section className="summary-bar">
           <div>

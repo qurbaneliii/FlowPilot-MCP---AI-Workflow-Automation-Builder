@@ -4,6 +4,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.agents.schemas import ValidatorOutput
 from app.workflow.graph import WorkflowGraph
+from app.schemas.ui import (
+    GuidedStepsResponse,
+    NextActionResponse,
+    WorkflowReviewResponse,
+)
 
 
 class GenerateWorkflowRequest(BaseModel):
@@ -23,6 +28,9 @@ class GenerateWorkflowResponse(BaseModel):
     node_display: list["WorkflowNodeDisplayResponse"] = Field(default_factory=list)
     layout: "WorkflowLayoutResponse | None" = None
     warnings: list[str] = Field(default_factory=list)
+    guided_steps: GuidedStepsResponse
+    next_action: NextActionResponse
+    workflow_review: WorkflowReviewResponse
 
 
 class WorkflowResponse(BaseModel):
@@ -34,6 +42,9 @@ class WorkflowResponse(BaseModel):
     summary: "WorkflowSummaryResponse | None" = None
     node_display: list["WorkflowNodeDisplayResponse"] = Field(default_factory=list)
     layout: "WorkflowLayoutResponse | None" = None
+    guided_steps: GuidedStepsResponse | None = None
+    next_action: NextActionResponse | None = None
+    workflow_review: WorkflowReviewResponse | None = None
 
 
 class WorkflowSummaryResponse(BaseModel):

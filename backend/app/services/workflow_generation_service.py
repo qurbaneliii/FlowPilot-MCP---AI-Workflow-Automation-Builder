@@ -31,8 +31,13 @@ class WorkflowGenerationService:
             raise ApiError(
                 422,
                 "INVALID_REPO_URL",
-                "Repository URL must be a GitHub owner/repo URL.",
-                {"repo_url": request.repo_url},
+                "Enter a valid GitHub repository URL.",
+                {
+                    "repo_url": request.repo_url,
+                    "example": "https://github.com/openai/openai-python",
+                },
+                severity="warning",
+                retryable=False,
             )
         graph = await PlannerAgent().run(
             {
@@ -67,6 +72,9 @@ class WorkflowGenerationService:
             node_display=self.view.node_display(graph_to_save),
             layout=self.view.layout(graph_to_save),
             warnings=validation.issues,
+            guided_steps=self.view.generated_guided_steps(),
+            next_action=self.view.generated_next_action(),
+            workflow_review=self.view.workflow_review(graph_to_save),
         )
 
     async def get(self, workflow_id: str) -> WorkflowResponse:
@@ -88,4 +96,7 @@ class WorkflowGenerationService:
             ),
             node_display=self.view.node_display(workflow.graph),
             layout=self.view.layout(workflow.graph),
+            guided_steps=self.view.generated_guided_steps(),
+            next_action=self.view.generated_next_action(),
+            workflow_review=self.view.workflow_review(workflow.graph),
         )

@@ -16,6 +16,16 @@ from app.schemas.run import (
     RunUiBannerResponse,
     RunUiStateResponse,
 )
+from app.schemas.ui import (
+    CompletionIssueCreationResponse,
+    CompletionOutputResponse,
+    CompletionSummaryResponse,
+    GuidedStepResponse,
+    GuidedStepsResponse,
+    NextActionResponse,
+    WorkflowReviewResponse,
+    WorkflowReviewWriteResponse,
+)
 from app.schemas.workflow_graph import (
     WorkflowLayoutNodeResponse,
     WorkflowLayoutResponse,
@@ -87,8 +97,187 @@ ARTIFACT_TYPES = (
     "linkedin_post_draft",
 )
 
+ARTIFACT_LABELS = {
+    "repo_audit_report": "Repo Audit Report",
+    "readme_improvement_plan": "README Improvement Plan",
+    "github_issue_drafts": "GitHub Issue Drafts",
+    "linkedin_post_draft": "LinkedIn Draft",
+}
+
+GUIDED_STEP_DEFINITIONS = (
+    (
+        "define_task",
+        "Define Task",
+        "The automation request and repository URL were provided.",
+    ),
+    (
+        "generate_workflow",
+        "Generate Workflow",
+        "FlowPilot created an executable workflow graph.",
+    ),
+    (
+        "run_automation",
+        "Run Automation",
+        "Workflow nodes are reading and analyzing the repository.",
+    ),
+    (
+        "review_approval",
+        "Review Approval",
+        "GitHub issue creation waits for a human decision.",
+    ),
+    (
+        "view_outputs",
+        "View Outputs",
+        "Generated reports and drafts are ready to review.",
+    ),
+)
+
 
 class RunViewService:
+    def generated_guided_steps(self) -> GuidedStepsResponse:
+        return _guided_steps("run_automation", completed_through=1)
+
+    def generated_next_action(self) -> NextActionResponse:
+        return NextActionResponse(
+            title="Run the automation",
+            description="Review the generated workflow, then start the run.",
+            primary_label="Run automation",
+            target_tab="canvas",
+            severity="info",
+        )
+
+    def workflow_review(self, graph: WorkflowGraph) -> WorkflowReviewResponse:
+        approval_required = any(node.type == "human_approval" for node in graph.nodes)
+        return WorkflowReviewResponse(
+            title="GitHub Repository Audit",
+            plain_english_summary=(
+                "FlowPilot will read the repository, analyze documentation and project structure, "
+                "draft GitHub issues, request approval before writes, and generate final reports."
+            ),
+            reads=[
+                "Repository metadata",
+                "README",
+                "File tree",
+                "Package files",
+                "Test files",
+                "CI configuration",
+            ],
+            writes=[
+                WorkflowReviewWriteResponse(
+                    label="GitHub issues",
+                    requires_approval=approval_required,
+                    mode="mock_or_real",
+                )
+            ],
+            approval_required=approval_required,
+            risk_level="medium" if approval_required else "low",
+            estimated_outputs=list(ARTIFACT_LABELS.values()),
+        )
+
+    def guided_steps(self, run_state: RunState) -> GuidedStepsResponse:
+        if run_state.status == "waiting_for_approval":
+            return _guided_steps("review_approval", completed_through=2)
+        if run_state.status == "completed":
+            return _guided_steps("view_outputs", completed_through=4)
+        if run_state.status == "failed":
+            failed_node = next(
+                (
+                    node
+                    for node in run_state.graph.nodes
+                    if run_state.node_states.get(node.id)
+                    and run_state.node_states[node.id].status == "failed"
+                ),
+                None,
+            )
+            failed_step = (
+                "review_approval"
+                if failed_node is not None and failed_node.type == "human_approval"
+                else "run_automation"
+            )
+            return _guided_steps(
+                failed_step,
+                completed_through=2 if failed_step == "review_approval" else 1,
+                failed_step=failed_step,
+            )
+        return _guided_steps("run_automation", completed_through=1)
+
+    def next_action(self, run_state: RunState) -> NextActionResponse:
+        if run_state.status == "waiting_for_approval":
+            return NextActionResponse(
+                title="Human approval required",
+                description="Review issue drafts before GitHub issue creation.",
+                primary_label="Approve issue creation",
+                secondary_label="Reject and skip issues",
+                target_tab="approval",
+                target_node_id="human_approval",
+                severity="warning",
+            )
+        if run_state.status == "completed":
+            return NextActionResponse(
+                title="Review generated outputs",
+                description="FlowPilot generated audit reports, issue drafts, and a LinkedIn draft.",
+                primary_label="View reports",
+                target_tab="reports",
+                severity="info",
+            )
+        if run_state.status == "failed":
+            return NextActionResponse(
+                title="Inspect failed node",
+                description="Open logs to inspect the failed workflow step.",
+                primary_label="Open logs",
+                target_tab="logs",
+                target_node_id=_active_node_id(run_state),
+                severity="error",
+            )
+        return NextActionResponse(
+            title="Workflow is running",
+            description="FlowPilot is reading the repository and executing workflow nodes.",
+            target_tab="canvas",
+            target_node_id=_active_node_id(run_state),
+            severity="info",
+        )
+
+    def completion_summary(
+        self, run_state: RunState, artifacts: list[ArtifactResponse]
+    ) -> CompletionSummaryResponse | None:
+        if run_state.status != "completed":
+            return None
+        issue_state = run_state.node_states.get("github_issue_creator")
+        issue_output = issue_state.output if issue_state and issue_state.output else {}
+        created = issue_output.get("created_issues", [])
+        created_count = len(created) if isinstance(created, list) else 0
+        skipped = issue_state is not None and issue_state.status == "skipped"
+        issue_mode = "skipped" if skipped else str(issue_output.get("mode") or "mock")
+        if skipped:
+            issue_message = (
+                "GitHub issue creation was skipped. Reports were still generated."
+            )
+        elif issue_mode == "mock":
+            issue_message = (
+                "Issue creation ran in mock mode. No real GitHub issues were created."
+            )
+        else:
+            issue_message = (
+                f"{created_count} GitHub issues were created after approval."
+            )
+        available_types = {artifact.artifact_type for artifact in artifacts}
+        primary_outputs = [
+            CompletionOutputResponse(type=artifact_type, label=label)
+            for artifact_type, label in ARTIFACT_LABELS.items()
+            if artifact_type in available_types
+        ]
+        return CompletionSummaryResponse(
+            title="Workflow completed",
+            description=f"FlowPilot audited the repository and generated {len(artifacts)} artifacts.",
+            artifact_count=len(artifacts),
+            issue_creation=CompletionIssueCreationResponse(
+                mode=issue_mode,
+                created_count=created_count,
+                message=issue_message,
+            ),
+            primary_outputs=primary_outputs,
+        )
+
     def workflow_summary(
         self, graph: WorkflowGraph, *, repo_url: str | None, mode: str | None = "mock"
     ) -> WorkflowSummaryResponse:
@@ -540,12 +729,12 @@ def _node_result_summary(
             metrics={"status": state.status.value},
         )
     if node_id == "manual_trigger":
-        prompt = str(output.get("source_prompt") or output.get("prompt") or "")
         repo_url = str(output.get("repo_url") or "Repository captured")
+        display_repo = repo_url.removeprefix("https://")
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Workflow triggered",
-            summary=f"{repo_url}. {prompt[:90]}".strip(),
+            summary=f"Started from your prompt for {display_repo}.",
             metrics={"repo_url": output.get("repo_url")},
         )
     if node_id == "github_repo_reader":
@@ -554,11 +743,12 @@ def _node_result_summary(
         files = snapshot.get("file_tree") or snapshot.get("tree") or []
         file_count = len(files) if isinstance(files, list) else 0
         readme_found = bool(snapshot.get("readme"))
-        mode = output.get("mode") or snapshot.get("mode")
+        mode = str(output.get("mode") or snapshot.get("mode") or "pending")
+        mode_label = "Real GitHub read" if mode == "real" else "Safe mock read"
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Repository scanned",
-            summary=f"Scanned {file_count} files. README {'found' if readme_found else 'not found'}. {mode or 'pending'} mode.",
+            summary=f"Scanned {file_count} files. README {'found' if readme_found else 'not found'}. {mode_label} mode.",
             metrics={
                 "files_scanned": file_count,
                 "readme_found": readme_found,
@@ -575,14 +765,18 @@ def _node_result_summary(
         critical_count = sum(
             1 for finding in findings if _dict_value(finding, "severity") == "critical"
         )
+        info_count = sum(
+            1 for finding in findings if _dict_value(finding, "severity") == "info"
+        )
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Repository analyzed",
-            summary=f"Found {len(findings)} findings: {warning_count} warning, {critical_count} critical.",
+            summary=f"Generated {len(findings)} findings: {critical_count} critical, {warning_count} warnings, {info_count} info.",
             metrics={
                 "findings": len(findings),
                 "warning_count": warning_count,
                 "critical_count": critical_count,
+                "info_count": info_count,
             },
         )
     if node_id == "readme_reviewer":
@@ -595,7 +789,7 @@ def _node_result_summary(
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="README reviewed",
-            summary=f"README score {score}. {len(missing)} missing sections.",
+            summary=f"README score: {score}/100. Missing {len(missing)} recommended sections.",
             metrics={"readme_score": score, "missing_sections": len(missing)},
         )
     if node_id == "issue_draft_generator":
@@ -604,32 +798,47 @@ def _node_result_summary(
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Issue drafts prepared",
-            summary=f"{draft_count} GitHub issue drafts ready for approval.",
+            summary=f"Generated {draft_count} issue drafts.",
             metrics={"issue_drafts": draft_count},
         )
     if node_id == "human_approval":
         drafts = output.get("issue_drafts") or []
         risk = output.get("risk_level") or "medium"
         status = output.get("decision") or state.status.value
+        issue_count = len(drafts) if isinstance(drafts, list) else 0
+        if state.status == "waiting_for_approval":
+            summary = f"Waiting for approval to create {issue_count} GitHub issues."
+        else:
+            summary = (
+                f"Approval {status}. {issue_count} issue drafts. Risk level {risk}."
+            )
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Approval gate",
-            summary=f"Approval {status}. {len(drafts) if isinstance(drafts, list) else 0} issue drafts. Risk level {risk}.",
+            summary=summary,
             metrics={
                 "approval_status": status,
-                "issue_count": len(drafts) if isinstance(drafts, list) else 0,
+                "issue_count": issue_count,
                 "risk_level": risk,
             },
         )
     if node_id == "github_issue_creator":
         created = output.get("created_issues") or []
         skipped = state.status == "skipped"
+        created_count = len(created) if isinstance(created, list) else 0
+        mode = str(output.get("mode") or "pending")
+        if skipped:
+            summary = "GitHub issue creation was skipped. No real issues were created."
+        elif mode == "mock":
+            summary = f"Created {created_count} mock issue results. No real GitHub issues were created."
+        else:
+            summary = f"Created {created_count} GitHub issues after approval."
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="GitHub issue creation",
-            summary=f"{len(created) if isinstance(created, list) else 0} issues created; {'skipped' if skipped else output.get('mode', 'pending')} mode.",
+            summary=summary,
             metrics={
-                "created_issues": len(created) if isinstance(created, list) else 0,
+                "created_issues": created_count,
                 "skipped": skipped,
                 "mode": output.get("mode"),
             },
@@ -654,7 +863,7 @@ def _node_result_summary(
         return NodeResultSummaryResponse(
             node_id=node_id,
             title="Reports written",
-            summary=f"{len(artifacts)} artifacts generated for review.",
+            summary=f"Saved {len(artifacts)} markdown artifacts.",
             metrics={"artifacts": len(artifacts)},
         )
     return NodeResultSummaryResponse(
@@ -680,3 +889,30 @@ def _latest_artifacts_by_type(
         if current is None or artifact.created_at >= current.created_at:
             latest[artifact.artifact_type] = artifact
     return latest
+
+
+def _guided_steps(
+    current_step: str,
+    *,
+    completed_through: int,
+    failed_step: str | None = None,
+) -> GuidedStepsResponse:
+    steps = []
+    for index, (step_id, label, description) in enumerate(GUIDED_STEP_DEFINITIONS):
+        if step_id == failed_step:
+            status = "failed"
+        elif index <= completed_through:
+            status = "completed"
+        elif step_id == current_step:
+            status = "active"
+        else:
+            status = "pending"
+        steps.append(
+            GuidedStepResponse(
+                id=step_id,
+                label=label,
+                status=status,
+                description=description,
+            )
+        )
+    return GuidedStepsResponse(current_step=current_step, steps=steps)

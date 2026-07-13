@@ -1,5 +1,6 @@
 import { Check, Circle, X } from "lucide-react";
 import type { RunStatus } from "@/types/run";
+import type { GuidedSteps } from "@/types/ui";
 
 const steps = [
   "Define Task",
@@ -12,30 +13,47 @@ const steps = [
 interface GuidedStepperProps {
   hasWorkflow?: boolean;
   runStatus?: RunStatus | null;
+  guidedSteps?: GuidedSteps | null;
 }
 
-export function GuidedStepper({ hasWorkflow = false, runStatus }: GuidedStepperProps) {
+export function GuidedStepper({ hasWorkflow = false, runStatus, guidedSteps }: GuidedStepperProps) {
   const activeIndex = getActiveIndex(hasWorkflow, runStatus);
   const failed = runStatus === "failed";
+  const renderedSteps = guidedSteps?.steps?.length
+    ? guidedSteps.steps
+    : steps.map((label, index) => ({
+        id: label,
+        label,
+        description: label,
+        status:
+          failed && index === activeIndex
+            ? "failed"
+            : index < activeIndex || (runStatus === "completed" && index <= activeIndex)
+              ? "completed"
+              : index === activeIndex
+                ? "active"
+                : "pending"
+      }));
 
   return (
     <nav className="guided-stepper" aria-label="Workflow progress">
-      {steps.map((label, index) => {
-        const completed = index < activeIndex || (runStatus === "completed" && index <= activeIndex);
-        const active = index === activeIndex;
-        const error = failed && active;
+      {renderedSteps.map((step, index) => {
+        const completed = step.status === "completed";
+        const active = step.status === "active";
+        const error = step.status === "failed";
         return (
           <div
-            key={label}
+            key={step.id}
             className={`guided-step ${completed ? "guided-step-completed" : ""} ${active ? "guided-step-active" : ""} ${error ? "guided-step-error" : ""}`}
             aria-current={active ? "step" : undefined}
+            title={step.description}
           >
             <span className="guided-step-marker">
               {error ? <X aria-hidden="true" /> : completed ? <Check aria-hidden="true" /> : <Circle aria-hidden="true" />}
             </span>
             <span>
               <span className="guided-step-number">Step {index + 1}</span>
-              <span className="guided-step-label">{label}</span>
+              <span className="guided-step-label">{step.label}</span>
             </span>
           </div>
         );

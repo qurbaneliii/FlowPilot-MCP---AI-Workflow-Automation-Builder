@@ -98,7 +98,13 @@ async def test_github_repo_reader_failure_becomes_node_failure(
         ctx("github_repo_reader", {"repo_url": "https://github.com/example/repo"})
     )
     assert result.status == "failed"
-    assert result.error["code"] == "github_repo_reader_failed"
+    assert result.error["code"] == "GITHUB_REPOSITORY_READ_FAILED"
+    assert result.error["message"] == (
+        "FlowPilot could not read this repository. Check that it is public "
+        "or configure a GitHub token."
+    )
+    assert result.error["severity"] == "error"
+    assert result.error["retryable"] is True
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,7 @@ from app.schemas.run import RunListResponse, RunResponse
 from app.services.artifact_service import ArtifactService
 from app.services.run_view_service import RunViewService, infer_mode
 from app.services.runtime_storage import RuntimeStorage, get_runtime_storage
+from app.services.ui_metadata import demo_mode, mode_explanations
 from app.workflow.state import RunState
 
 
@@ -75,6 +76,11 @@ class RunQueryService:
             inspector=self.view.inspector(run_state),
             layout=self.view.layout(run_state.graph).model_dump(mode="json"),
             mode=mode,
+            guided_steps=self.view.guided_steps(run_state),
+            next_action=self.view.next_action(run_state),
+            mode_explanations=mode_explanations(),
+            demo_mode=demo_mode(),
+            completion_summary=self.view.completion_summary(run_state, artifacts),
         )
 
     async def _required_run(self, run_id: str) -> RunState:

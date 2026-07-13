@@ -14,6 +14,7 @@ export function Header({ health, healthError, mode }: HeaderProps) {
   const mcpService = health?.services?.mcp;
   const backendService = health?.services?.backend;
   const openaiService = health?.services?.openai;
+  const explanations = health?.mode_explanations;
   const databaseLabel =
     databaseService?.label ??
     (health?.dependencies.database === "ok"
@@ -43,30 +44,30 @@ export function Header({ health, healthError, mode }: HeaderProps) {
       : "border-status-warning/25 bg-status-warning/5 text-neutral-300";
   const databaseIconClass =
     databaseService?.blocking === true ? "text-status-danger" : "text-status-warning";
-  const githubExplanation =
+  const githubExplanation = explanations?.mcp.description ?? (
     mcpService?.status === "real"
       ? "Live GitHub repository access is enabled."
       : mcpService?.status === "mock"
         ? "Safe local mode: repository reads and writes use deterministic mock data."
-        : "Checking GitHub access mode.";
+        : "Checking GitHub access mode.");
   const agentLabel =
-    openaiService?.status === "real"
+    explanations?.agent.label ?? (openaiService?.status === "real"
       ? "Real OpenAI"
       : openaiService
         ? "Local AI demo"
-        : "AI checking";
-  const agentExplanation =
+        : "AI checking");
+  const agentExplanation = explanations?.agent.description ?? (
     openaiService?.status === "real"
       ? "Live OpenAI model analysis is enabled."
       : openaiService
         ? "Deterministic local AI responses keep the demo repeatable and secrets-free."
-        : "Checking AI analysis mode.";
-  const storageExplanation =
+        : "Checking AI analysis mode.");
+  const storageExplanation = explanations?.storage.description ?? (
     databaseService?.status === "memory"
       ? "Run history resets when the backend restarts."
       : databaseService?.status === "ok"
         ? "Run history is stored persistently in Postgres."
-        : "Checking storage configuration.";
+        : "Checking storage configuration.");
   return (
     <header className="sticky top-0 z-20 border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1760px] flex-col gap-3 px-4 py-3 sm:px-6 lg:h-[76px] lg:flex-row lg:items-center lg:justify-between lg:px-8">

@@ -64,8 +64,12 @@ export default function HomePage() {
         />
       ) : (
         <div className="space-y-6">
-          <GuidedStepper hasWorkflow runStatus={runState.run?.status} />
-          <NextActionCard hasWorkflow run={runState.run} />
+          <GuidedStepper
+            hasWorkflow
+            runStatus={runState.run?.status}
+            guidedSteps={runState.run?.guided_steps ?? workflowState.workflow.guided_steps}
+          />
+          <NextActionCard hasWorkflow run={runState.run} workflow={workflowState.workflow} />
           <WorkflowSummaryBar
             workflow={workflowState.workflow}
             graph={graph}

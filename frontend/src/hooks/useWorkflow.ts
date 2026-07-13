@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { generateWorkflow } from "@/lib/api";
+import { FlowPilotApiError, generateWorkflow } from "@/lib/api";
 import type { GeneratedWorkflow } from "@/types/workflow";
 
 const GITHUB_REPO_RE =
@@ -43,7 +43,9 @@ export function useWorkflow() {
       return response;
     } catch (caught) {
       const message =
-        caught instanceof Error
+        caught instanceof FlowPilotApiError
+          ? friendlyApiError(caught)
+          : caught instanceof Error
           ? friendlyGenerationError(caught.message)
           : "Workflow generation failed in a controlled way.";
       setError(message);
@@ -65,6 +67,14 @@ export function useWorkflow() {
     error,
     generate
   };
+}
+
+function friendlyApiError(error: FlowPilotApiError): string {
+  const example = error.details?.example;
+  if (typeof example === "string") {
+    return `${error.message} For example: ${example}`;
+  }
+  return friendlyGenerationError(error.message);
 }
 
 function friendlyGenerationError(message: string): string {
