@@ -156,13 +156,14 @@ Mock mode is explicit in outputs and UI labels. The project does not claim full 
 
 Default local behavior is intentionally safe:
 
-- `OPENAI_AGENT_MODE=fake` uses deterministic fake agent outputs.
-- `GITHUB_MCP_MODE=mock` simulates repository reads and issue creation.
-- With no `DATABASE_URL`, the API uses explicit reset-on-restart `Memory mode`.
+- Real public GitHub reads were verified against `openai/openai-python` without a token by using `GITHUB_MCP_MODE=real`.
+- `GITHUB_MCP_MODE=mock` is the local default and keeps GitHub writes simulated. Real issue creation requires `GITHUB_MCP_MODE=real`, a scoped `GITHUB_TOKEN`, and explicit approval at the human approval gate.
+- `OPENAI_AGENT_MODE=fake` is the local default and uses deterministic fake agent outputs. Real model analysis requires `OPENAI_AGENT_MODE=real` and `OPENAI_API_KEY`.
+- With no `DATABASE_URL`, the API uses explicit reset-on-restart `Memory mode`; configure Postgres for persistent run history.
 - When `DATABASE_URL` is set, the API runtime selects Postgres unless `STORAGE_MODE=memory` explicitly overrides it.
 - Docker Compose starts PostgreSQL, runs Alembic migrations, and expects health to report `Postgres connected`.
 
-Real OpenAI/GitHub/MCP execution requires explicit credentials and mode changes. Production hardening is not complete.
+Real GitHub issue creation and real OpenAI execution were not smoke-tested during the final local pass because credentials were not available. Production hardening is not complete.
 
 ## Setup
 
@@ -299,11 +300,40 @@ Deployment instructions for Vercel, Render/Railway/Fly-compatible backends, and 
 
 Captured local browser screenshots are stored in `docs/screenshots/`:
 
-- `01-start-workflow.png`
-- `02-generated-workflow-canvas.png`
-- `03-waiting-for-approval.png`
-- `04-completed-reports.png`
-- `05-logs-node-results.png`
+<details>
+<summary>1. Start workflow</summary>
+
+![FlowPilot start workflow](docs/screenshots/01-start-workflow.png)
+
+</details>
+
+<details>
+<summary>2. Generated workflow canvas</summary>
+
+![FlowPilot generated workflow canvas](docs/screenshots/02-generated-workflow-canvas.png)
+
+</details>
+
+<details>
+<summary>3. Waiting for approval</summary>
+
+![FlowPilot waiting for approval](docs/screenshots/03-waiting-for-approval.png)
+
+</details>
+
+<details>
+<summary>4. Completed reports</summary>
+
+![FlowPilot completed reports](docs/screenshots/04-completed-reports.png)
+
+</details>
+
+<details>
+<summary>5. Logs and node results</summary>
+
+![FlowPilot logs and node results](docs/screenshots/05-logs-node-results.png)
+
+</details>
 
 ## Demo GIF
 

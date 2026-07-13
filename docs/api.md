@@ -258,7 +258,7 @@ Example:
 {
   "error": {
     "code": "INVALID_REPO_URL",
-    "message": "Repository URL must be a GitHub owner/repo URL.",
+    "message": "Enter a valid GitHub repository URL.",
     "details": {
       "repo_url": "not-a-url"
     },
