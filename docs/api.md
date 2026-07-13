@@ -19,7 +19,7 @@ Example degraded local response:
   "status": "ok",
   "version": "0.1.0",
   "dependencies": {
-    "database": "error",
+    "database": "not_configured",
     "openai": "not_configured"
   },
   "services": {
@@ -30,9 +30,9 @@ Example degraded local response:
       "blocking": false
     },
     "database": {
-      "status": "not_configured",
+      "status": "memory",
       "label": "Memory mode",
-      "severity": "warning",
+      "severity": "info",
       "blocking": false
     },
     "mcp": {
@@ -53,6 +53,11 @@ Example degraded local response:
     "storage_mode_label": "Memory mode",
     "show_database_warning": true,
     "database_warning_blocks_demo": false
+  },
+  "storage": {
+    "mode": "memory",
+    "persistent": false,
+    "reset_on_restart": true
   }
 }
 ```
@@ -62,6 +67,7 @@ Rules:
 - `dependencies` is preserved for older clients.
 - `services.*.blocking` tells the frontend whether a warning should be red/error-level.
 - Mock/in-memory demo modes are explicit and not presented as catastrophic failures.
+- Postgres mode reports `Postgres connected`; an unavailable configured Postgres service is blocking and never silently falls back to memory.
 
 ## POST `/workflows/generate`
 

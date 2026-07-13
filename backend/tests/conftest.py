@@ -1,8 +1,12 @@
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+
+from app.core.config import get_settings
+from app.services.runtime_storage import reset_runtime_storage
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
@@ -10,6 +14,21 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 _INTEGRATION_SKIPS_IN_CI: list[str] = []
+
+
+@pytest.fixture(autouse=True)
+def force_unit_tests_to_explicit_memory_mode(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    if "tests/unit/" not in request.node.nodeid.replace("\\", "/"):
+        yield
+        return
+    monkeypatch.setenv("STORAGE_MODE", "memory")
+    get_settings.cache_clear()
+    reset_runtime_storage()
+    yield
+    reset_runtime_storage()
+    get_settings.cache_clear()
 
 
 def pytest_configure(config: pytest.Config) -> None:

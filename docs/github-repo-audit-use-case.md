@@ -76,7 +76,7 @@ The `artifact_tabs` response indicates which tabs are available.
 
 ## Mock Mode
 
-The default local path uses a mock GitHub client and fake agents. Mock issue creation returns explicit mock URLs and mode fields, so the UI and examples do not imply real GitHub writes.
+The default local path uses a mock GitHub client and fake agents. Mock issue creation returns explicit mock URLs and mode fields, so the UI and examples do not imply real GitHub writes. With `GITHUB_MCP_MODE=real`, the built-in REST adapter can read a public repository without a token; issue writes additionally require a token and the existing human approval gate.
 
 ## Example Files
 

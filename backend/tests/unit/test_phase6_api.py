@@ -369,3 +369,6 @@ def test_backend_e2e_github_repo_audit_approval_completion(client: TestClient) -
         node for node in approved["nodes"] if node["node_id"] == "github_issue_creator"
     )
     assert issue_node["output"]["mode"] == "mock"
+    artifacts = {item["artifact_type"]: item for item in approved["artifacts"]}
+    assert "Created issues: 1" in artifacts["repo_audit_report"]["content"]
+    assert "mock:https://github.com/" in artifacts["github_issue_drafts"]["content"]

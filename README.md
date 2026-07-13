@@ -39,8 +39,9 @@ flowchart LR
   Nodes --> Agents["Agent Runner"]
   Nodes --> MCP["MCP-style Tool Clients"]
   Query --> UI["UI-friendly summaries"]
-  RunService --> Store["In-memory MVP Store"]
-  Store -.future.-> Postgres["SQLAlchemy/PostgreSQL layer"]
+  RunService --> Storage["Runtime Storage Boundary"]
+  Storage --> Memory["Explicit Memory Demo Mode"]
+  Storage --> Postgres["SQLAlchemy/PostgreSQL Runtime"]
   Agents --> Fake["Fake backend"]
   Agents --> OpenAI["Real OpenAI backend"]
   MCP --> GitHub["GitHub mock/real client"]
@@ -85,7 +86,7 @@ scripts/             stack verification and markdown fence checks
 
 ## Backend API Endpoints
 
-- `GET /api/v1/health`: process health, dependency status, UI-friendly service labels, and blocking flags.
+- `GET /api/v1/health`: process health, dependency status, storage durability, UI-friendly service labels, and blocking flags.
 - `POST /api/v1/workflows/generate`: generate, validate, persist, summarize, and display-map a workflow.
 - `GET /api/v1/workflows/{workflow_id}`: retrieve a saved workflow graph and metadata.
 - `POST /api/v1/workflows/run`: create a run and execute it in the background.
@@ -143,7 +144,7 @@ Agent outputs are schema-validated with Pydantic. Invalid output is reprompted e
 
 MCP-style clients sit behind ports and a registry:
 
-- GitHub client: mock by default, real mode when configured.
+- GitHub client: mock by default; real mode uses the built-in GitHub REST adapter or an explicitly configured MCP server.
 - Filesystem client: mock by default, real mode limited to `FILESYSTEM_MCP_ROOT`.
 - OpenAI MCP client: unavailable when no server URL is configured, real when configured.
 
@@ -155,8 +156,9 @@ Default local behavior is intentionally safe:
 
 - `OPENAI_AGENT_MODE=fake` uses deterministic fake agent outputs.
 - `GITHUB_MCP_MODE=mock` simulates repository reads and issue creation.
-- Database may show non-blocking `Memory mode` outside Docker.
-- Docker Compose starts PostgreSQL and expects health to report `database: "ok"`.
+- With no `DATABASE_URL`, the API uses explicit reset-on-restart `Memory mode`.
+- When `DATABASE_URL` is set, the API runtime selects Postgres unless `STORAGE_MODE=memory` explicitly overrides it.
+- Docker Compose starts PostgreSQL, runs Alembic migrations, and expects health to report `Postgres connected`.
 
 Real OpenAI/GitHub/MCP execution requires explicit credentials and mode changes. Production hardening is not complete.
 
@@ -191,6 +193,7 @@ Core variables:
 ```text
 APP_ENV=development
 APP_VERSION=0.1.0
+STORAGE_MODE=postgres
 DATABASE_URL=postgresql+asyncpg://flowpilot:flowpilot@localhost:5432/flowpilot
 OPENAI_AGENT_MODE=fake
 OPENAI_AGENT_MODEL=gpt-4.1
@@ -201,6 +204,7 @@ GITHUB_MCP_SERVER_URL=
 GITHUB_TOKEN=
 FILESYSTEM_MCP_MODE=mock
 FILESYSTEM_MCP_ROOT=/workspace
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1
 ```
 
@@ -268,25 +272,26 @@ docker compose config --quiet
 
 The verification script builds and starts PostgreSQL, backend, and frontend, waits for backend health with `database: "ok"`, then checks the frontend root returns HTTP 200.
 
-Final local hardening note from 2026-07-10: `docker compose config --quiet` passed, but `docker info` could not connect to Docker Desktop's Linux engine. The full Docker stack runtime was not verified locally in that environment.
+Final local hardening note from 2026-07-13: `docker compose config --quiet` passed, but Docker Desktop did not become responsive during a bounded startup attempt. The full Docker stack runtime and local Postgres integration tests were therefore not verified on this host.
 
 ## Known Limitations
 
-- The API MVP uses in-process store state for workflow/run/query services; SQLAlchemy repositories and migrations exist but are not the primary API runtime path yet.
-- Real OpenAI and external MCP/GitHub credentials are optional and not exercised in tests.
+- The API runtime uses Postgres repositories when configured; memory mode is an explicit demo fallback and resets on process restart.
+- Real public GitHub reads were smoke-tested without a token. Real issue creation and real OpenAI execution were not run because this environment has no `GITHUB_TOKEN` or `OPENAI_API_KEY`.
 - Browser screenshots are captured from the local mock-mode workflow. The demo GIF remains pending until it is recorded from the working app.
-- Authentication, multi-user tenancy, deployment hardening, queueing, and background worker isolation are future work.
+- Authentication, multi-user tenancy, queueing, and background worker isolation are future work. The application is deployment-ready but was not hosted during this pass because no provider credentials or CLIs were available.
 - The project is focused on a lightweight, auditable AI workflow MVP rather than a broad no-code automation suite.
 
 ## Roadmap
 
-- Wire API runtime to durable PostgreSQL repositories.
 - Add authenticated project/user scopes.
 - Expand workflow templates beyond GitHub repository audit.
 - Add production-ready background execution and resumability.
 - Add real MCP credential walkthroughs.
 - Capture a short demo GIF.
-- Add deployment documentation after a real hosted environment exists.
+- Add a managed deployment and production smoke-test record.
+
+Deployment instructions for Vercel, Render/Railway/Fly-compatible backends, and managed Postgres are in [`docs/deployment.md`](docs/deployment.md).
 
 ## Screenshots
 

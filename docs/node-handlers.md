@@ -41,7 +41,7 @@ The handler also uses an idempotency key derived from:
 - node id
 - issue title
 
-Mock issue creation returns explicit mock display URLs.
+Mock issue creation returns explicit mock display URLs. Real mode requires a token, writes only after approval, and uses an idempotency marker so retries can reuse an existing issue.
 
 ## Condition Node Safety
 
@@ -67,4 +67,4 @@ Names resolve only from the provided context.
 - `github_issue_drafts`
 - `linkedin_post_draft`
 
-Artifacts are persisted by `ArtifactService` and returned with metadata and display hints for the frontend.
+Artifacts are persisted by `ArtifactService` and returned with metadata and display hints for the frontend. Persistence reconciles approved issue-creation results into the final report artifacts without making safe report generation depend on the risky write node.

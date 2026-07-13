@@ -22,6 +22,7 @@ services:
       APP_ENV: development
       APP_VERSION: 0.1.0
       LOG_LEVEL: INFO
+      STORAGE_MODE: postgres
       DATABASE_URL: postgresql+asyncpg://flowpilot:flowpilot@postgres:5432/flowpilot
       DEFAULT_USER_ID: 00000000-0000-0000-0000-000000000001
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -31,6 +32,7 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       FILESYSTEM_MCP_MODE: ${FILESYSTEM_MCP_MODE:-mock}
       FILESYSTEM_MCP_ROOT: /workspace
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
     ports:
       - "8000:8000"
     depends_on:
@@ -50,7 +52,8 @@ services:
       start_period: 10s
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >-
+      sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     build:

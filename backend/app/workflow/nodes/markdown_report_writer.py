@@ -13,7 +13,6 @@ from app.workflow.nodes.common import (
     EmptyOutput,
     collect_dependency_values,
     completed,
-    dependency_outputs,
     first_dependency_value,
     make_artifact,
     log_node,
@@ -26,12 +25,11 @@ class MarkdownReportWriterHandler(NodeHandler):
     output_schema: ClassVar[type[BaseModel]] = EmptyOutput
 
     async def execute(self, context: NodeExecutionContext) -> NodeExecutionResult:
-        outputs = dependency_outputs(context)
-        mode = _mode(outputs)
+        mode = _mode(context)
         analysis = first_dependency_value(context, "analysis") or {}
         readme_review = first_dependency_value(context, "readme_review") or {}
         issue_drafts = collect_dependency_values(context, "issue_drafts")
-        created_issues = collect_dependency_values(context, "created_issues")
+        created_issues = _run_values(context, "created_issues")
         linkedin = first_dependency_value(context, "linkedin_draft") or {}
         artifacts = [
             make_artifact(
@@ -76,12 +74,23 @@ class MarkdownReportWriterHandler(NodeHandler):
         return completed({"artifacts": artifacts})
 
 
-def _mode(outputs: dict[str, dict[str, Any]]) -> str | None:
-    for output in outputs.values():
+def _mode(context: NodeExecutionContext) -> str | None:
+    for state in context.run_state.node_states.values():
+        output = state.output or {}
         mode = output.get("mode")
         if isinstance(mode, str):
             return mode
     return None
+
+
+def _run_values(context: NodeExecutionContext, key: str) -> list[Any]:
+    values: list[Any] = []
+    for state in context.run_state.node_states.values():
+        output = state.output or {}
+        value = output.get(key)
+        if isinstance(value, list):
+            values.extend(value)
+    return values
 
 
 def _repo_report(analysis: Any, readme_review: Any, created_issues: list[Any]) -> str:

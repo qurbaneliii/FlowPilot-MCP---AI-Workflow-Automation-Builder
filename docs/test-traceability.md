@@ -58,6 +58,8 @@ This document maps major product requirements to concrete test coverage. It is n
 |---|---|
 | GitHub mock snapshot | `test_github_client_mock_returns_realistic_snapshot` |
 | GitHub mock idempotent issue creation | `test_github_client_mock_create_issue_idempotent_on_same_key` |
+| Real GitHub REST read contract and controlled failures | `test_real_github_url_parser`, `test_github_reader_public_repo_snapshot_contract`, `test_github_reader_missing_readme_is_not_failure`, `test_github_reader_provider_errors_are_controlled` |
+| Real issue token gate and idempotency | `test_issue_creator_real_mode_requires_token`, `test_issue_creator_real_mode_is_idempotent` |
 | Filesystem mock reads fixture tree | `test_filesystem_client_mock_reads_fixture_tree` |
 | OpenAI MCP unavailable mode | `test_openai_mcp_client_unavailable_mode_when_url_unset`, `test_openai_mcp_client_call_tool_raises_when_unavailable` |
 | Fake MCP server handshake | `test_openai_mcp_client_handshake_against_fake_server` |
@@ -88,10 +90,11 @@ The SQLAlchemy persistence layer has integration tests for:
 - artifact save/list
 - migration upgrade idempotency
 - full engine run persisted end to end
+- runtime storage selection and service-reload persistence for runs, approvals, and artifacts
 
 These tests require a reachable PostgreSQL test database and are skipped in local runs when no test database is available.
 
-Local runs without `TEST_DATABASE_URL` or `DATABASE_URL` skip 10 Postgres integration tests with the reason `No TEST_DATABASE_URL or DATABASE_URL configured for Postgres tests`.
+Local runs without `TEST_DATABASE_URL` or `DATABASE_URL` skip 13 Postgres integration tests with the reason `No TEST_DATABASE_URL or DATABASE_URL configured for Postgres tests`.
 
 CI provides a PostgreSQL service container, creates `flowpilot_test`, runs Alembic migrations against `TEST_DATABASE_URL`, and treats any skipped integration test as a CI failure. This prevents Postgres integration coverage from passing silently when the service is unreachable.
 
@@ -108,7 +111,7 @@ npm run build
 
 Current code includes typed API models for health, workflow, run, approval, artifacts, structured errors, and backend-driven UI state.
 
-The 2026-07-10 visual acceptance pass also exercised the local browser flow at 1440px, 1366px, and 1280px and captured the five screenshots under `docs/screenshots/`.
+The 2026-07-13 visual acceptance pass exercised the local browser flow at 1440px, 1366px, 1280px, and 1024px and refreshed the five screenshots under `docs/screenshots/`.
 
 ## Stack Verification
 
@@ -122,4 +125,4 @@ docker compose config --quiet
 
 If Docker is unavailable, report that explicitly rather than claiming stack verification.
 
-Final local hardening on 2026-07-10: `docker info` failed because the Docker daemon was unavailable, while `docker compose config --quiet` passed. The full Docker stack was therefore not runtime-verified locally.
+Final local hardening on 2026-07-13: Docker Desktop did not become responsive during a bounded startup attempt, while `docker compose config --quiet` passed. The full Docker stack and local Postgres test run were therefore not runtime-verified on this host; CI must execute the Postgres tests without skips.

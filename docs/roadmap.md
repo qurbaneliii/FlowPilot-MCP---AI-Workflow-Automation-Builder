@@ -20,7 +20,6 @@ This roadmap is intentionally honest about the current MVP. FlowPilot is a serio
 
 ## Near-Term Improvements
 
-- Wire API runtime to durable PostgreSQL repositories instead of in-process store state.
 - Add persistent background worker execution rather than in-process background tasks.
 - Capture `docs/screenshots/demo.gif`.
 - Add a small seeded demo mode that can run without external credentials.
@@ -29,7 +28,7 @@ This roadmap is intentionally honest about the current MVP. FlowPilot is a serio
 
 ## Integration Improvements
 
-- Document real GitHub MCP setup with token scopes.
+- Add a safe-repository record of a manually verified real GitHub issue write.
 - Document real OpenAI agent mode setup.
 - Add environment validation for real mode misconfiguration.
 - Add safer filesystem real-mode examples with scoped roots.
@@ -46,11 +45,10 @@ This roadmap is intentionally honest about the current MVP. FlowPilot is a serio
 
 - Authentication and user/project scoping.
 - Durable queues and worker isolation.
-- Database-backed run state for API runtime.
 - Secrets management.
 - Audit log persistence.
 - Rate limiting.
-- Deployment documentation after a real hosted environment exists.
+- Managed deployment verification and operational monitoring.
 
 ## Explicit Non-Goals for Current MVP
 

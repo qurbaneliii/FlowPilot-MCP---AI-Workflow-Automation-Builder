@@ -4,13 +4,14 @@ import app.workflow.nodes  # noqa: F401
 from app.agents.planner_agent import PlannerAgent
 from app.agents.validator_agent import ValidatorAgent
 from app.core.api_errors import ApiError
+from app.core.config import get_settings
 from app.schemas.workflow_graph import (
     GenerateWorkflowRequest,
     GenerateWorkflowResponse,
     WorkflowResponse,
 )
-from app.services.store import STORE, WorkflowEntry, new_id, now
 from app.services.run_view_service import RunViewService
+from app.services.runtime_storage import RuntimeStorage, get_runtime_storage
 
 
 GITHUB_REPO_RE = re.compile(
@@ -19,8 +20,9 @@ GITHUB_REPO_RE = re.compile(
 
 
 class WorkflowGenerationService:
-    def __init__(self) -> None:
+    def __init__(self, storage: RuntimeStorage | None = None) -> None:
         self.view = RunViewService()
+        self.storage = storage or get_runtime_storage()
 
     async def generate(
         self, request: GenerateWorkflowRequest
@@ -50,20 +52,17 @@ class WorkflowGenerationService:
                 {"issues": validation.issues},
             )
         graph_to_save = validation.corrected_graph or graph
-        workflow_id = new_id()
-        STORE.workflows[workflow_id] = WorkflowEntry(
-            id=workflow_id,
-            graph=graph_to_save,
-            source_prompt=request.prompt,
-            repo_url=request.repo_url,
-            created_at=now(),
+        workflow_id = await self.storage.create_workflow(
+            graph_to_save, request.prompt, request.repo_url
         )
         return GenerateWorkflowResponse(
             workflow_id=workflow_id,
             workflow=graph_to_save,
             validation=validation,
             summary=self.view.workflow_summary(
-                graph_to_save, repo_url=request.repo_url, mode="mock"
+                graph_to_save,
+                repo_url=request.repo_url,
+                mode=get_settings().github_mcp_mode,
             ),
             node_display=self.view.node_display(graph_to_save),
             layout=self.view.layout(graph_to_save),
@@ -71,7 +70,7 @@ class WorkflowGenerationService:
         )
 
     async def get(self, workflow_id: str) -> WorkflowResponse:
-        workflow = STORE.workflows.get(workflow_id)
+        workflow = await self.storage.get_workflow(workflow_id)
         if workflow is None:
             raise ApiError(404, "WORKFLOW_NOT_FOUND", "Workflow not found.")
         return WorkflowResponse(
@@ -83,7 +82,9 @@ class WorkflowGenerationService:
                 "created_at": workflow.created_at.isoformat(),
             },
             summary=self.view.workflow_summary(
-                workflow.graph, repo_url=workflow.repo_url, mode="mock"
+                workflow.graph,
+                repo_url=workflow.repo_url,
+                mode=get_settings().github_mcp_mode,
             ),
             node_display=self.view.node_display(workflow.graph),
             layout=self.view.layout(workflow.graph),

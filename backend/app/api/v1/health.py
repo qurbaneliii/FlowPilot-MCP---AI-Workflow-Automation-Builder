@@ -32,6 +32,7 @@ class HealthResponse(BaseModel):
     dependencies: HealthDependencies
     services: dict[str, "HealthServiceStatus"]
     ui: "HealthUiStatus"
+    storage: "HealthStorageStatus"
 
 
 class HealthServiceStatus(BaseModel):
@@ -52,9 +53,21 @@ class HealthUiStatus(BaseModel):
     database_warning_blocks_demo: bool
 
 
+class HealthStorageStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["memory", "postgres"]
+    persistent: bool
+    reset_on_restart: bool
+
+
 async def check_database(
-    database_engine: AsyncEngine = engine, timeout_seconds: float = 2.0
+    database_engine: AsyncEngine | None = None, timeout_seconds: float = 2.0
 ) -> DependencyStatus:
+    if database_engine is None and get_settings().effective_storage_mode == "memory":
+        return "not_configured"
+    database_engine = database_engine or engine
+
     async def probe() -> None:
         async with database_engine.connect() as connection:
             await connection.execute(text("select 1"))
@@ -88,6 +101,7 @@ async def health() -> HealthResponse:
         openai_status=openai_status,
         mcp_mode=settings.github_mcp_mode,
         agent_mode=settings.openai_agent_mode,
+        storage_mode=settings.effective_storage_mode,
     )
     return HealthResponse(
         status="ok",
@@ -103,6 +117,11 @@ async def health() -> HealthResponse:
             show_database_warning=services["database"].status != "ok",
             database_warning_blocks_demo=services["database"].blocking,
         ),
+        storage=HealthStorageStatus(
+            mode=settings.effective_storage_mode,
+            persistent=settings.effective_storage_mode == "postgres",
+            reset_on_restart=settings.effective_storage_mode == "memory",
+        ),
     )
 
 
@@ -112,8 +131,9 @@ def _services(
     openai_status: DependencyStatus,
     mcp_mode: str,
     agent_mode: str,
+    storage_mode: str,
 ) -> dict[str, HealthServiceStatus]:
-    database = _database_service(database_status)
+    database = _database_service(database_status, storage_mode)
     return {
         "backend": HealthServiceStatus(
             status="ok",
@@ -137,26 +157,28 @@ def _services(
     }
 
 
-def _database_service(status: DependencyStatus) -> HealthServiceStatus:
+def _database_service(
+    status: DependencyStatus, storage_mode: str
+) -> HealthServiceStatus:
+    if storage_mode == "memory":
+        return HealthServiceStatus(
+            status="memory",
+            label="Memory mode",
+            severity="info",
+            blocking=False,
+        )
     if status == "ok":
         return HealthServiceStatus(
             status="ok",
-            label="Database connected",
+            label="Postgres connected",
             severity="success",
             blocking=False,
         )
-    if status == "not_configured":
-        return HealthServiceStatus(
-            status="not_configured",
-            label="DB not configured",
-            severity="warning",
-            blocking=False,
-        )
     return HealthServiceStatus(
-        status="not_configured",
-        label="Memory mode",
-        severity="warning",
-        blocking=False,
+        status="error",
+        label="Postgres unavailable",
+        severity="error",
+        blocking=True,
     )
 
 

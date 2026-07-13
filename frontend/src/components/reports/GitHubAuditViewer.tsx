@@ -72,7 +72,11 @@ export function GitHubAuditViewer({ audit }: GitHubAuditViewerProps) {
                   <p className="font-mono text-xs text-neutral-200">{flag.code}</p>
                   <p className="mt-1 leading-6 text-neutral-300">{flag.description}</p>
                 </div>
-                <StatusPill status={flag.severity === "critical" ? "failed" : "waiting_for_approval"} compact />
+                <StatusPill
+                  status={flag.severity === "critical" ? "failed" : "waiting_for_approval"}
+                  label={titleCase(flag.severity)}
+                  compact
+                />
               </div>
             ))}
           </div>

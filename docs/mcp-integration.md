@@ -29,13 +29,17 @@ Mock mode supports:
 - idempotency by issue title/run/node key
 - explicit `mode: "mock"` and `mock: true` outputs
 
-Real mode requires:
+Real public GitHub reads use the built-in REST adapter when no MCP server URL is supplied:
 
 ```text
 GITHUB_MCP_MODE=real
-GITHUB_MCP_SERVER_URL=...
-GITHUB_TOKEN=...
+GITHUB_MCP_SERVER_URL=
+GITHUB_TOKEN=        # optional for public reads, required for writes
 ```
+
+The REST adapter validates GitHub URLs, reads metadata, README, and the recursive file tree, maps authentication/rate-limit/not-found failures to controlled errors, and supports missing READMEs. If `GITHUB_MCP_SERVER_URL` is set, the registry uses the external JSON-RPC MCP adapter instead.
+
+Real issue creation always remains behind `human_approval`, requires `GITHUB_TOKEN`, embeds an idempotency marker, reuses an existing matching issue, and returns the real issue URL. Only test this against a safe repository you own.
 
 ### Filesystem
 
@@ -81,6 +85,7 @@ MCP tests verify:
 
 - GitHub mock snapshot behavior
 - GitHub mock issue idempotency
+- built-in GitHub REST URL parsing, snapshot contract, missing README, auth/rate-limit handling, token requirements, and write idempotency
 - filesystem mock reads
 - OpenAI MCP unavailable mode
 - handshake and tool listing against a local fake MCP server
@@ -92,5 +97,6 @@ No test requires a real external MCP server.
 ## Limitations
 
 - The project does not ship a production MCP deployment.
-- Real GitHub/OpenAI MCP use needs credentials and an MCP server URL.
+- Built-in real GitHub reads do not require an MCP server; authenticated writes require a token.
+- Real OpenAI MCP use still needs credentials and an MCP server URL.
 - Default demo behavior is mock/unavailable by design.

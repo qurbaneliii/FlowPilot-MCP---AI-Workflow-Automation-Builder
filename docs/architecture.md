@@ -22,9 +22,10 @@ flowchart LR
   Handlers --> MCP["MCP Registry"]
   Query --> View["RunViewService"]
   View --> UIState["UI-friendly response models"]
-  Runner --> Store["In-memory MVP store"]
-  Store -.planned runtime.-> Repos["Repository ports"]
-  Repos --> Postgres["PostgreSQL / SQLAlchemy"]
+  Runner --> Storage["Runtime storage boundary"]
+  Storage --> Memory["Explicit memory demo"]
+  Storage --> Repos["Repository ports"]
+  Repos --> Postgres["PostgreSQL / SQLAlchemy runtime"]
 ```
 
 ## Runtime Layers
@@ -86,9 +87,7 @@ MCP-style clients are hidden behind ports and a registry. GitHub and filesystem 
 
 ## Persistence Status
 
-The MVP API currently uses an in-process store for workflow/run/approval/artifact data. SQLAlchemy models, migrations, repository ports, repository implementations, and integration tests exist, but the API runtime has not yet been fully switched to durable repository-backed persistence.
-
-This is why local non-Docker health can show non-blocking `Memory mode`, while Docker Compose expects PostgreSQL to be available and healthy.
+API services use one runtime storage boundary. With `DATABASE_URL` configured, it selects the existing SQLAlchemy repositories for workflows, runs, node execution state and logs, approvals, and artifacts. `STORAGE_MODE=memory` is the explicit reset-on-restart demo fallback. Health reports the selected mode, whether it is persistent, and whether state resets on restart.
 
 ## Backend-Driven UI State
 

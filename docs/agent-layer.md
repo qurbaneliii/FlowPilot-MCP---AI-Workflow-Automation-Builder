@@ -54,6 +54,13 @@ OPENAI_AGENT_MODEL=gpt-4.1
 
 Tests do not call the real OpenAI API.
 
+Manual real-mode smoke:
+
+1. Set `OPENAI_API_KEY` and `OPENAI_AGENT_MODE=real`.
+2. Start the backend and run the GitHub audit workflow.
+3. Confirm findings are non-deterministic provider output but still conform to the strict Pydantic schemas.
+4. Keep GitHub writes in mock mode unless a safe repository and explicit approval are available.
+
 ## Schema Validation
 
 Agent schemas reject unexpected fields and invalid enums. Examples:

@@ -121,7 +121,13 @@ def test_health_endpoint_returns_200_when_dependencies_healthy(
     monkeypatch.setattr(health_module, "check_database", reachable_database)
     monkeypatch.setattr(health_module, "check_openai", configured_openai)
     monkeypatch.setattr(
-        health_module, "get_settings", lambda: Settings(app_version="test")
+        health_module,
+        "get_settings",
+        lambda: Settings(
+            app_version="test",
+            storage_mode="postgres",
+            database_url="postgresql+asyncpg://test:test@localhost/test",
+        ),
     )
 
     client = TestClient(create_app())
@@ -133,7 +139,12 @@ def test_health_endpoint_returns_200_when_dependencies_healthy(
     assert body["version"] == "test"
     assert body["dependencies"] == {"database": "ok", "openai": "ok"}
     assert body["services"]["backend"]["label"] == "Backend connected"
-    assert body["services"]["database"]["label"] == "Database connected"
+    assert body["services"]["database"]["label"] == "Postgres connected"
+    assert body["storage"] == {
+        "mode": "postgres",
+        "persistent": True,
+        "reset_on_restart": False,
+    }
 
 
 def test_health_response_contains_ui_status_labels(

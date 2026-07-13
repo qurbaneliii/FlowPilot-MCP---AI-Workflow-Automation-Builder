@@ -11,7 +11,9 @@ from alembic.config import Config
 from sqlalchemy import exc, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.core.config import Settings
 from app.models.node_execution import NodeExecutionModel
+from app.services.runtime_storage import RuntimeStorage
 from app.storage.exceptions import (
     ApprovalAlreadyResolvedError,
     ConcurrentModificationError,
@@ -341,3 +343,70 @@ async def test_full_engine_run_persisted_end_to_end(repositories) -> None:
     assert final.node_states["A"].status == NodeStatus.COMPLETED
     assert final.node_states["approval"].status == NodeStatus.COMPLETED
     assert final.node_states["B"].status == NodeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_workflow_run_persists_across_service_reload(
+    postgres_url: str, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    del session_factory  # fixture provides per-test truncation
+    settings = Settings(storage_mode="postgres", database_url=postgres_url)
+    first_storage = RuntimeStorage(settings)
+    graph = graph_with(node("A"))
+    workflow_id = await first_storage.create_workflow(
+        graph, "Audit repo", "https://github.com/example/repo"
+    )
+    run_state = await first_storage.create_run(workflow_id, graph)
+    completed = await WorkflowEngine(sleep=no_sleep).run(run_state)
+    await first_storage.save_run(completed, expected_version=run_state.version)
+
+    reloaded = await RuntimeStorage(settings).load_run(run_state.run_id)
+
+    assert reloaded is not None
+    assert reloaded.status == "completed"
+    assert reloaded.node_states["A"].status == NodeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_approval_persists_across_query_service_reload(
+    postgres_url: str, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    del session_factory
+    settings = Settings(storage_mode="postgres", database_url=postgres_url)
+    storage = RuntimeStorage(settings)
+    graph = graph_with(node("approval", "approval"))
+    workflow_id = await storage.create_workflow(
+        graph, "Audit repo", "https://github.com/example/repo"
+    )
+    run_state = await storage.create_run(workflow_id, graph)
+    paused = await WorkflowEngine(sleep=no_sleep).run(run_state)
+    await storage.save_run(paused, expected_version=run_state.version)
+    approval = await storage.find_or_create_approval(paused.run_id, "approval")
+    await storage.resolve_approval(approval.id, "approved", "Safe test")
+
+    reloaded = await RuntimeStorage(settings).get_approval(approval.id)
+
+    assert reloaded is not None
+    assert reloaded.status == "approved"
+    assert reloaded.node_execution_id == "approval"
+
+
+@pytest.mark.asyncio
+async def test_artifacts_persist_across_query_service_reload(
+    postgres_url: str, session_factory: async_sessionmaker[AsyncSession]
+) -> None:
+    del session_factory
+    settings = Settings(storage_mode="postgres", database_url=postgres_url)
+    storage = RuntimeStorage(settings)
+    graph = graph_with(node("A"))
+    workflow_id = await storage.create_workflow(
+        graph, "Audit repo", "https://github.com/example/repo"
+    )
+    run_state = await storage.create_run(workflow_id, graph)
+    await storage.save_artifact(run_state.run_id, "repo_audit_report", "# Report")
+
+    artifacts = await RuntimeStorage(settings).list_artifact_records(run_state.run_id)
+
+    assert len(artifacts) == 1
+    assert artifacts[0].type == "repo_audit_report"
+    assert artifacts[0].content_markdown == "# Report"
