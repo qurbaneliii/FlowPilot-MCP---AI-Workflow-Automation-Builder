@@ -2,7 +2,7 @@
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 const repositoryName =
   process.env.GITHUB_REPOSITORY?.split("/")[1] ??
-  "FlowPilot-MCP---AI-Workflow-Automation-Builder";
+  "FlowPilot-MCP--AI-Workflow-Automation-Builder";
 const githubPagesBasePath = `/${repositoryName}`;
 
 const nextConfig = {
