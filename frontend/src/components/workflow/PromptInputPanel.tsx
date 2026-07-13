@@ -1,6 +1,6 @@
 "use client";
 
-import { Wand2 } from "lucide-react";
+import { Github, Wand2 } from "lucide-react";
 import { EXAMPLE_PROMPTS } from "@/lib/constants";
 import { ErrorState } from "@/components/layout/ErrorState";
 
@@ -25,6 +25,10 @@ export function PromptInputPanel({
   onRepoUrlChange,
   onGenerate
 }: PromptInputPanelProps) {
+  const useDemoRepo = () => {
+    onRepoUrlChange("https://github.com/openai/openai-python");
+    onPromptChange("Audit this GitHub repository and draft guarded improvement issues.");
+  };
   return (
     <div className="space-y-4">
       <div>
@@ -50,7 +54,12 @@ export function PromptInputPanel({
           className="form-input"
           placeholder="https://github.com/owner/repo"
         />
+        <button type="button" className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-accent-300 hover:text-accent-200" onClick={useDemoRepo}>
+          <Github className="h-3.5 w-3.5" aria-hidden="true" />
+          Use demo repo: openai/openai-python
+        </button>
       </div>
+      <p className="text-xs leading-5 text-neutral-500">FlowPilot will not run or create anything until you choose the next action.</p>
       <div className="flex flex-wrap gap-2">
         {EXAMPLE_PROMPTS.map((example) => (
           <button
@@ -63,7 +72,7 @@ export function PromptInputPanel({
           </button>
         ))}
       </div>
-      {validationErrors.length > 0 && (
+      {validationErrors.length > 0 && repoUrl.trim().length > 0 && (
         <p className="text-xs leading-5 text-status-warning">
           {validationErrors[0]}
         </p>
@@ -76,7 +85,7 @@ export function PromptInputPanel({
         onClick={onGenerate}
       >
         <Wand2 className="h-4 w-4" aria-hidden="true" />
-        {isGenerating ? "Generating workflow..." : "Generate executable workflow"}
+        {isGenerating ? "Building your workflow..." : "Generate workflow"}
       </button>
     </div>
   );

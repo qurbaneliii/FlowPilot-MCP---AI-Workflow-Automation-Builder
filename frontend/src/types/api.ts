@@ -33,6 +33,11 @@ export interface HealthResponse {
     show_database_warning: boolean;
     database_warning_blocks_demo: boolean;
   };
+  storage?: {
+    mode: "memory" | "postgres";
+    persistent: boolean;
+    reset_on_restart: boolean;
+  };
 }
 
 export interface GenerateWorkflowRequest {

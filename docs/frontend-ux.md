@@ -4,6 +4,16 @@ The FlowPilot frontend is a workflow operations surface. It should feel like a c
 
 ## Product Flow
 
+The workspace uses a compact guided journey:
+
+1. Define Task
+2. Generate Workflow
+3. Run Automation
+4. Review Approval
+5. View Outputs
+
+A next-best-action card updates with the workflow state, and the workspace automatically recommends Approval, Reports, or Logs when those views need attention.
+
 1. User enters an automation prompt and GitHub repository URL.
 2. Frontend calls `POST /api/v1/workflows/generate`.
 3. Backend returns a workflow graph plus summary, node display metadata, and layout hints.
@@ -134,3 +144,5 @@ Manual smoke path:
 8. Confirm reports appear and no generated artifact tab shows an empty state.
 
 Final local visual acceptance on 2026-07-13 used a browser-driven mock-mode flow at 1440px, 1366px, 1280px, and 1024px. It verified the start screen, generated workflow screen, dedicated canvas, all 9 nodes visible, no node overlap, no horizontal overflow, no minimap, no Next.js error dialog, run start, waiting-for-approval state, one primary approval action, explicit mock issue results, four completed reports, no contradictory report status, readable grouped logs, and human-readable node results with collapsible raw details.
+
+The final UX refinement on the same date added the five-step guide, state-aware next action, verified demo-repository shortcut, calm demo-mode explanation, plain-English node descriptions, a decision-oriented approval preview, a rewarding completion summary, deliverable-purpose headers, and resilient copy feedback. The browser smoke verified the complete demo flow and refreshed all five screenshots.

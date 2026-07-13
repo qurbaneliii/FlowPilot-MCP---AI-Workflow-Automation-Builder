@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { Copy, FileText } from "lucide-react";
-import { copyToClipboard, formatTimestamp } from "@/lib/formatters";
+import { FileText } from "lucide-react";
+import { CopyButton } from "@/components/layout/CopyButton";
+import { formatTimestamp, titleCase } from "@/lib/formatters";
 import type { Artifact } from "@/types/artifact";
 
 interface MarkdownArtifactViewerProps {
@@ -14,11 +12,10 @@ export function MarkdownArtifactViewer({
   artifact,
   fallbackTitle
 }: MarkdownArtifactViewerProps) {
-  const [copied, setCopied] = useState(false);
   if (!artifact) {
     return (
       <div className="rounded-md border border-dashed border-neutral-800 bg-neutral-950/55 p-6 text-sm text-neutral-400">
-        {fallbackTitle} has not been generated yet.
+        {fallbackTitle} will appear here after the workflow completes.
       </div>
     );
   }
@@ -32,24 +29,11 @@ export function MarkdownArtifactViewer({
               {artifact.filename}
             </h3>
             <p className="font-mono text-[11px] text-neutral-500">
-              {artifact.artifact_type} | {formatTimestamp(artifact.created_at)} |{" "}
-              {artifact.mode ?? "mode pending"}
+              {titleCase(artifact.artifact_type)} · Generated {formatTimestamp(artifact.created_at)} · {artifact.mode ?? "mode pending"} mode
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => {
-            void copyToClipboard(artifact.content).then(() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1200);
-            });
-          }}
-        >
-          <Copy className="h-4 w-4" aria-hidden="true" />
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <CopyButton value={artifact.content} label="Copy report" />
       </header>
       <div className="markdown-viewer p-4">{renderMarkdown(artifact.content)}</div>
     </article>

@@ -5,6 +5,7 @@ import { ApprovalPanel } from "@/components/approvals/ApprovalPanel";
 import { SectionCard } from "@/components/layout/SectionCard";
 import { RunSummaryPanel } from "@/components/runs/RunSummaryPanel";
 import { RunTimeline } from "@/components/runs/RunTimeline";
+import { CompletionSummary } from "@/components/runs/CompletionSummary";
 import { NodeInspector } from "./NodeInspector";
 import type { Run } from "@/types/run";
 import type { WorkflowGraph } from "@/types/workflow";
@@ -59,10 +60,7 @@ export function ContextPanel({
           eyebrow="Reports ready"
           action={<FileText className="h-4 w-4 text-accent-300" aria-hidden="true" />}
         >
-          <RunSummaryPanel run={run} />
-          <a href="#reports" className="btn-primary mt-4 w-full">
-            View generated reports
-          </a>
+          <CompletionSummary run={run} lastDecision={lastDecision} />
         </SectionCard>
         <SectionCard title="Selected Node" eyebrow="Inspector">
           <NodeInspector graph={graph} run={run} selectedNodeId={selectedNodeId} />

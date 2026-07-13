@@ -13,6 +13,7 @@ export function Header({ health, healthError, mode }: HeaderProps) {
   const databaseService = health?.services?.database;
   const mcpService = health?.services?.mcp;
   const backendService = health?.services?.backend;
+  const openaiService = health?.services?.openai;
   const databaseLabel =
     databaseService?.label ??
     (health?.dependencies.database === "ok"
@@ -23,7 +24,11 @@ export function Header({ health, healthError, mode }: HeaderProps) {
           ? "DB not configured"
           : "DB checking");
   const modeLabel =
-    health?.ui?.primary_mode_label ??
+    mcpService?.status === "real"
+      ? "Real GitHub"
+      : mcpService?.status === "mock"
+        ? "Safe GitHub demo"
+        : health?.ui?.primary_mode_label ??
     mcpService?.label ??
     (mode === "real"
       ? "Real MCP"
@@ -38,6 +43,30 @@ export function Header({ health, healthError, mode }: HeaderProps) {
       : "border-status-warning/25 bg-status-warning/5 text-neutral-300";
   const databaseIconClass =
     databaseService?.blocking === true ? "text-status-danger" : "text-status-warning";
+  const githubExplanation =
+    mcpService?.status === "real"
+      ? "Live GitHub repository access is enabled."
+      : mcpService?.status === "mock"
+        ? "Safe local mode: repository reads and writes use deterministic mock data."
+        : "Checking GitHub access mode.";
+  const agentLabel =
+    openaiService?.status === "real"
+      ? "Real OpenAI"
+      : openaiService
+        ? "Local AI demo"
+        : "AI checking";
+  const agentExplanation =
+    openaiService?.status === "real"
+      ? "Live OpenAI model analysis is enabled."
+      : openaiService
+        ? "Deterministic local AI responses keep the demo repeatable and secrets-free."
+        : "Checking AI analysis mode.";
+  const storageExplanation =
+    databaseService?.status === "memory"
+      ? "Run history resets when the backend restarts."
+      : databaseService?.status === "ok"
+        ? "Run history is stored persistently in Postgres."
+        : "Checking storage configuration.";
   return (
     <header className="sticky top-0 z-20 border-b border-neutral-800/80 bg-neutral-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1760px] flex-col gap-3 px-4 py-3 sm:px-6 lg:h-[76px] lg:flex-row lg:items-center lg:justify-between lg:px-8">
@@ -56,11 +85,15 @@ export function Header({ health, healthError, mode }: HeaderProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill status={backendStatus} label={healthError ? "Backend offline" : backendService?.label ?? "Backend connected"} />
-          <span className="status-chip">
+          <span className="status-chip" title={githubExplanation}>
             <Sparkles className="h-3.5 w-3.5 text-accent-300" aria-hidden="true" />
             {modeLabel}
           </span>
-          <span className={`status-chip ${databaseWarningClass}`}>
+          <span className="status-chip" title={agentExplanation}>
+            <Sparkles className="h-3.5 w-3.5 text-violet-300" aria-hidden="true" />
+            {agentLabel}
+          </span>
+          <span className={`status-chip ${databaseWarningClass}`} title={storageExplanation}>
             <Database className={`h-3.5 w-3.5 ${databaseIconClass}`} aria-hidden="true" />
             {databaseLabel}
           </span>

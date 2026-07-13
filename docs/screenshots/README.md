@@ -8,6 +8,6 @@ Captured local browser acceptance screenshots:
 - `04-completed-reports.png`
 - `05-logs-node-results.png`
 
-These PNGs were refreshed from the local mock-mode backend/frontend flow on 2026-07-13. They cover the start screen, generated workflow canvas, waiting-for-approval state, completed reports with mock issue results, and grouped logs/node-results state.
+These PNGs were refreshed from the final guided local mock-mode flow on 2026-07-13. They show the compact progress stepper, next-action guidance, verified demo-repository entry point, plain-English workflow canvas, decision-focused approval, deliverable-focused completion, and secondary logs/node-results views.
 
 `demo.gif` is still pending manual recording. Do not claim a GIF is included until it is captured from the working app.

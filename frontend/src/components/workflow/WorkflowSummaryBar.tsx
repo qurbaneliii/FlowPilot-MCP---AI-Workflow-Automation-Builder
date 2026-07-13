@@ -1,4 +1,4 @@
-import { Github, Play, ShieldCheck } from "lucide-react";
+import { Eye, Github, Pencil, Play, ShieldCheck } from "lucide-react";
 import { RunStatusBadge } from "@/components/runs/RunStatusBadge";
 import { StatusPill } from "@/components/layout/StatusPill";
 import { getWorkflowSummary } from "@/lib/workflowMapper";
@@ -29,21 +29,22 @@ export function WorkflowSummaryBar({
   return (
     <section className="summary-bar">
       <div className="min-w-0">
-        <p className="kicker">Active workflow</p>
+        <p className="kicker">Workflow review</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold text-neutral-50">{summary.name}</h2>
           <StatusPill status={workflow?.validation.valid ? "completed" : "pending"} label={summary.statusLabel ?? "Validated"} />
           {run && <RunStatusBadge status={run.status} />}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-sm text-neutral-400">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">{summary.description}</p>
+        <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-5">
           <span className="inline-flex items-center gap-1.5">
             <Github className="h-4 w-4 text-neutral-500" aria-hidden="true" />
             {(summary.repoUrl ?? repoUrl).replace("https://github.com/", "github.com/")}
           </span>
-          <span>{summary.nodeCount} nodes</span>
-          <span>{summary.riskyActionCount} risky action</span>
-          <span>{summary.approvalRequired ? "Approval required" : "No approval gate"}</span>
-          <span>{titleCase(summary.mode ?? mode ?? "mode pending")}</span>
+          <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4 text-neutral-500" aria-hidden="true" />Reads repository files</span>
+          <span className="inline-flex items-center gap-1.5"><Pencil className="h-4 w-4 text-neutral-500" aria-hidden="true" />Writes issues after approval</span>
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-neutral-500" aria-hidden="true" />{summary.approvalRequired ? "Approval required" : "No approval gate"}</span>
+          <span>{summary.nodeCount} nodes · {titleCase(summary.mode ?? mode ?? "mode pending")}</span>
         </div>
       </div>
       <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -54,12 +55,12 @@ export function WorkflowSummaryBar({
           onClick={onRun}
         >
           <Play className="h-4 w-4" aria-hidden="true" />
-          {run ? "Run again" : isStarting ? "Starting..." : "Run workflow"}
+          {run ? "Run again" : isStarting ? "Starting automation..." : "Run automation"}
         </button>
-        <a href="#reports" className="btn-ghost">
+        {run?.status === "completed" && <a href="#reports" className="btn-ghost">
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           View reports
-        </a>
+        </a>}
       </div>
     </section>
   );

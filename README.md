@@ -99,12 +99,14 @@ scripts/             stack verification and markdown fence checks
 
 The frontend is a workflow workspace, not a chat transcript:
 
-- Start view: prompt, repository URL, example prompts, validation/error states.
-- Summary bar: backend-provided workflow summary, mode, risk count, approval requirement.
+- Guided journey: a compact five-step progress indicator and state-aware next-action card explain where the user is and what to do next.
+- Start view: approachable prompt and repository inputs, example prompts, a verified demo-repository shortcut, and a plain-English outcome checklist.
+- Demo guidance: calm labels explain safe GitHub mock writes, deterministic local AI, and reset-on-restart memory storage.
+- Workflow review: backend-provided summary explains repository reads, approval-gated writes, node count, and mode before the user runs anything.
 - Canvas: custom React Flow nodes with backend display metadata and run status.
-- Context panel: run summary, selected node inspector, approval card, or completion summary.
+- Context panel: run summary, selected node inspector, decision-focused approval card, or deliverable-focused completion summary.
 - Lower workspace tabs: overview, approval, reports, logs, node results.
-- Reports: artifact tabs use backend availability metadata to avoid contradictory empty states.
+- Reports: artifact tabs present outputs as final deliverables with purpose text and reusable copy actions; logs and raw node details remain secondary.
 
 ## GitHub Repo Audit Use Case
 

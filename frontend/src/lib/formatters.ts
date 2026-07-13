@@ -49,9 +49,23 @@ export function summarizeUnknown(value: unknown): string {
   return "Output captured";
 }
 
-export function copyToClipboard(text: string): Promise<void> {
-  if (!navigator.clipboard) {
-    return Promise.reject(new Error("Clipboard API is unavailable."));
+export async function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall back for embedded browsers that expose but restrict Clipboard API.
+    }
   }
-  return navigator.clipboard.writeText(text);
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error("Clipboard copy is unavailable in this browser.");
 }

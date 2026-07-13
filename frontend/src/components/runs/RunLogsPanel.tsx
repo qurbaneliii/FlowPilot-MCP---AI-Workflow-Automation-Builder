@@ -15,7 +15,7 @@ export function RunLogsPanel({ run }: RunLogsPanelProps) {
   if (!run) {
     return (
       <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-4 text-sm text-neutral-400">
-        Logs will stream after a workflow run starts.
+        Execution logs will appear after you run the workflow.
       </div>
     );
   }
@@ -59,6 +59,7 @@ export function RunLogsPanel({ run }: RunLogsPanelProps) {
               <p className="font-mono text-[11px] text-neutral-500">
                 {formatTimestamp(entry.timestamp)}
               </p>
+              <p className="mt-2 text-xs font-medium text-neutral-400">Technical details</p>
               <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-neutral-950 p-3 text-xs leading-5 text-neutral-300">
                 {JSON.stringify(entry.details ?? {}, null, 2)}
               </pre>

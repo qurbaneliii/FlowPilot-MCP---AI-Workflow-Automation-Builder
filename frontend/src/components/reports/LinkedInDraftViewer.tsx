@@ -1,9 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { Copy, PenLine } from "lucide-react";
+import { PenLine } from "lucide-react";
 import { EmptyState } from "@/components/layout/EmptyState";
-import { copyToClipboard } from "@/lib/formatters";
+import { CopyButton } from "@/components/layout/CopyButton";
 import type { LinkedInDraft } from "@/types/artifact";
 
 interface LinkedInDraftViewerProps {
@@ -11,7 +8,6 @@ interface LinkedInDraftViewerProps {
 }
 
 export function LinkedInDraftViewer({ draft }: LinkedInDraftViewerProps) {
-  const [copied, setCopied] = useState(false);
   if (!draft) {
     return (
       <EmptyState
@@ -33,19 +29,7 @@ export function LinkedInDraftViewer({ draft }: LinkedInDraftViewerProps) {
             LinkedIn demo post
           </h3>
         </div>
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => {
-            void copyToClipboard(text).then(() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1200);
-            });
-          }}
-        >
-          <Copy className="h-4 w-4" aria-hidden="true" />
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <CopyButton value={text} label="Copy draft" />
       </div>
       <p className="whitespace-pre-wrap text-sm leading-7 text-neutral-200">
         {draft.post_text}

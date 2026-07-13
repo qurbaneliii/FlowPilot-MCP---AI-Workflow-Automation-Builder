@@ -42,7 +42,7 @@ export function ApprovalPanel({
   const description =
     "description" in approval
       ? approval.description
-      : "FlowPilot paused because this step can create external GitHub issues.";
+      : "FlowPilot is paused before creating GitHub issues. Approve only if these drafts look correct.";
   return (
     <div className="space-y-4">
       <div>
@@ -60,10 +60,17 @@ export function ApprovalPanel({
       <div className="space-y-2">
         {issueDrafts.slice(0, 3).map((issue) => (
           <div key={issue.title} className="rounded-md border border-neutral-800 bg-neutral-950/55 p-3">
-            <p className="text-sm font-medium text-neutral-100">{issue.title}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-neutral-100">{issue.title}</p>
+              <span className="rounded-md border border-neutral-800 px-2 py-1 font-mono text-[10px] uppercase text-neutral-400">{issue.priority} priority</span>
+            </div>
             <p className="mt-1 line-clamp-2 text-sm leading-6 text-neutral-400">
               {issue.body}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+              {issue.labels.slice(0, 3).map((label) => <span key={label}>#{label}</span>)}
+              <span>{issue.acceptance_criteria.length} acceptance criteria</span>
+            </div>
           </div>
         ))}
       </div>
@@ -76,7 +83,7 @@ export function ApprovalPanel({
           onClick={() => onApprove(approval.approval_id)}
         >
           <Check className="h-4 w-4" aria-hidden="true" />
-          {loadingDecision === "approve" ? "Approving..." : "Approve"}
+          {loadingDecision === "approve" ? "Approving issue creation..." : "Approve issue creation"}
         </button>
         <button
           type="button"
@@ -85,7 +92,7 @@ export function ApprovalPanel({
           onClick={() => onReject(approval.approval_id)}
         >
           <X className="h-4 w-4" aria-hidden="true" />
-          {loadingDecision === "reject" ? "Rejecting..." : "Reject"}
+          {loadingDecision === "reject" ? "Skipping issue creation..." : "Reject and skip issues"}
         </button>
       </div>
     </div>

@@ -1,13 +1,15 @@
 import { Github } from "lucide-react";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { StatusPill } from "@/components/layout/StatusPill";
+import { CopyButton } from "@/components/layout/CopyButton";
 import type { IssueDraft } from "@/types/artifact";
 
 interface IssueDraftsViewerProps {
   issues: IssueDraft[];
+  artifactContent?: string;
 }
 
-export function IssueDraftsViewer({ issues }: IssueDraftsViewerProps) {
+export function IssueDraftsViewer({ issues, artifactContent }: IssueDraftsViewerProps) {
   if (!issues.length) {
     return (
       <EmptyState
@@ -18,7 +20,9 @@ export function IssueDraftsViewer({ issues }: IssueDraftsViewerProps) {
     );
   }
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className="space-y-3">
+      {artifactContent && <div className="flex justify-end"><CopyButton value={artifactContent} label="Copy issue drafts" /></div>}
+      <div className="grid gap-3 lg:grid-cols-2">
       {issues.map((issue) => (
         <article key={issue.title} className="rounded-md border border-neutral-800 bg-neutral-950/55 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -51,12 +55,14 @@ export function IssueDraftsViewer({ issues }: IssueDraftsViewerProps) {
             </div>
           )}
           {(issue.display_url || issue.url) && (
-            <p className="mt-4 break-all font-mono text-xs text-accent-300">
-              {issue.display_url ?? issue.url}
-            </p>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800 pt-3">
+              <p className="break-all font-mono text-xs text-accent-300">{issue.display_url ?? issue.url}</p>
+              <CopyButton value={issue.display_url ?? issue.url ?? ""} label="Copy URL" />
+            </div>
           )}
         </article>
       ))}
+      </div>
     </div>
   );
 }

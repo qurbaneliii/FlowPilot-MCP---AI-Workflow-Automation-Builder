@@ -8,6 +8,18 @@ export function WorkflowNode({ data }: NodeProps<FlowNodeData>) {
   const typeMeta = getNodeTypeMeta(data.workflowNode.type);
   const statusMeta = getStatusMeta(data.status);
   const Icon = typeMeta.icon;
+  const stateSummary =
+    data.status === "running"
+      ? "Running now"
+      : data.status === "waiting_for_approval"
+        ? "Needs your approval"
+        : data.status === "skipped"
+          ? String(data.runNode?.error?.message ?? "Skipped because an earlier decision stopped this action.")
+          : data.runNode?.error
+            ? String(data.runNode.error.message ?? "This step failed.")
+            : data.runNode?.output
+              ? data.outputSummary
+              : typeMeta.description;
   const statusClass =
     data.status === "running"
       ? "node-running"
@@ -34,7 +46,7 @@ export function WorkflowNode({ data }: NodeProps<FlowNodeData>) {
               {data.display?.name ?? data.runNode?.name ?? data.workflowNode.name}
             </p>
             <p className="truncate font-mono text-[11px] uppercase tracking-normal text-neutral-500">
-              {data.display?.subtitle ?? data.runNode?.subtitle ?? typeMeta.label}
+              {typeMeta.label}
             </p>
           </div>
         </div>
@@ -45,9 +57,7 @@ export function WorkflowNode({ data }: NodeProps<FlowNodeData>) {
       </div>
       <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-950/70 px-2.5 py-2">
         <p className="line-clamp-2 text-xs leading-5 text-neutral-400">
-          {data.runNode?.error
-            ? String(data.runNode.error.message ?? "Node failed.")
-            : data.outputSummary}
+          {stateSummary}
         </p>
       </div>
       <Handle type="source" position={Position.Bottom} className="workflow-handle" />
