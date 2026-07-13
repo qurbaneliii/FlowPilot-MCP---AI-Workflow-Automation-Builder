@@ -98,7 +98,13 @@ async def test_github_repo_reader_failure_becomes_node_failure(
         ctx("github_repo_reader", {"repo_url": "https://github.com/example/repo"})
     )
     assert result.status == "failed"
-    assert result.error["code"] == "github_repo_reader_failed"
+    assert result.error["code"] == "GITHUB_REPOSITORY_READ_FAILED"
+    assert result.error["message"] == (
+        "FlowPilot could not read this repository. Check that it is public "
+        "or configure a GitHub token."
+    )
+    assert result.error["severity"] == "error"
+    assert result.error["retryable"] is True
 
 
 @pytest.mark.asyncio
@@ -314,6 +320,37 @@ async def test_markdown_report_writer_persists_artifacts() -> None:
         "github_issue_drafts.md",
         "linkedin_post_draft.md",
     }
+
+
+@pytest.mark.asyncio
+async def test_markdown_report_writer_includes_run_mode_and_created_issue_urls() -> (
+    None
+):
+    result = await MarkdownReportWriterHandler().execute(
+        ctx(
+            "markdown_report_writer",
+            dependencies={
+                "repo_reader": {"mode": "mock"},
+                "issue_creator": {
+                    "created_issues": [
+                        {
+                            "title": "Improve README",
+                            "url": "https://github.com/example/repo/issues/1",
+                            "display_url": "mock:https://github.com/example/repo/issues/1",
+                        }
+                    ]
+                },
+            },
+        )
+    )
+
+    artifacts = {item["artifact_type"]: item for item in result.output["artifacts"]}
+    assert artifacts["repo_audit_report"]["mode"] == "mock"
+    assert "Created issues: 1" in artifacts["repo_audit_report"]["content"]
+    assert (
+        "mock:https://github.com/example/repo/issues/1"
+        in artifacts["github_issue_drafts"]["content"]
+    )
 
 
 @pytest.mark.asyncio

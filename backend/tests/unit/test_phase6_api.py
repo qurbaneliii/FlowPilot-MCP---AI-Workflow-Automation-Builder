@@ -53,12 +53,39 @@ def test_generate_workflow_response_contains_summary_and_node_display(
     )
 
 
+def test_workflow_generation_contains_workflow_review(client: TestClient) -> None:
+    body = generate(client)
+
+    assert body["workflow_review"]["title"] == "GitHub Repository Audit"
+    assert body["workflow_review"]["approval_required"] is True
+    assert "README" in body["workflow_review"]["reads"]
+    assert body["workflow_review"]["writes"][0] == {
+        "label": "GitHub issues",
+        "requires_approval": True,
+        "mode": "mock_or_real",
+    }
+    assert body["guided_steps"]["current_step"] == "run_automation"
+    assert body["next_action"]["primary_label"] == "Run automation"
+
+
 def test_generate_workflow_invalid_repo_url(client: TestClient) -> None:
     response = client.post(
         "/api/v1/workflows/generate", json={"prompt": "Audit", "repo_url": "not-a-url"}
     )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "INVALID_REPO_URL"
+
+
+def test_invalid_repo_url_error_is_user_friendly(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/workflows/generate", json={"prompt": "Audit", "repo_url": "nope"}
+    )
+    error = response.json()["error"]
+
+    assert error["message"] == "Enter a valid GitHub repository URL."
+    assert error["details"]["example"] == "https://github.com/openai/openai-python"
+    assert error["severity"] == "warning"
+    assert error["retryable"] is False
 
 
 def test_generate_workflow_validation_failure(
@@ -135,6 +162,8 @@ def test_run_response_contains_summary_timeline_and_ui_state(
     assert body["timeline"]
     assert body["node_results"]
     assert body["ui_state"]["recommended_tab"]
+    assert body["mode_explanations"]["mcp"]["mode"] == "mock"
+    assert body["demo_mode"]["active"] is True
 
 
 def test_run_response_waiting_for_approval_recommends_approval_view(
@@ -150,6 +179,33 @@ def test_run_response_waiting_for_approval_recommends_approval_view(
     assert body["ui_state"]["primary_view"] == "approval"
     assert body["ui_state"]["recommended_tab"] == "approval"
     assert body["summary"]["next_required_action"] == "Approve GitHub issue creation"
+
+
+def test_run_response_contains_guided_steps(client: TestClient) -> None:
+    workflow_id = generate(client)["workflow_id"]
+    run_id = client.post(
+        "/api/v1/workflows/run", json={"workflow_id": workflow_id}
+    ).json()["run_id"]
+    body = client.get(f"/api/v1/runs/{run_id}").json()
+
+    assert body["guided_steps"]["current_step"] == "review_approval"
+    steps = {step["id"]: step for step in body["guided_steps"]["steps"]}
+    assert steps["run_automation"]["status"] == "completed"
+    assert steps["review_approval"]["status"] == "active"
+    assert steps["view_outputs"]["status"] == "pending"
+
+
+def test_run_response_contains_next_action(client: TestClient) -> None:
+    workflow_id = generate(client)["workflow_id"]
+    run_id = client.post(
+        "/api/v1/workflows/run", json={"workflow_id": workflow_id}
+    ).json()["run_id"]
+    action = client.get(f"/api/v1/runs/{run_id}").json()["next_action"]
+
+    assert action["title"] == "Human approval required"
+    assert action["primary_label"] == "Approve issue creation"
+    assert action["secondary_label"] == "Reject and skip issues"
+    assert action["target_tab"] == "approval"
 
 
 def test_run_response_status_mapping_does_not_mark_pending_issue_creator_completed_before_approval(
@@ -199,6 +255,32 @@ def test_run_response_completed_recommends_reports_view(client: TestClient) -> N
     assert body["ui_state"]["primary_view"] == "reports"
     assert body["ui_state"]["recommended_tab"] == "reports"
     assert body["ui_state"]["show_completion_summary"] is True
+    assert body["guided_steps"]["steps"][-1]["status"] == "completed"
+
+
+def test_completed_run_contains_completion_summary(client: TestClient) -> None:
+    workflow_id = generate(client)["workflow_id"]
+    run_id = client.post(
+        "/api/v1/workflows/run", json={"workflow_id": workflow_id}
+    ).json()["run_id"]
+    approval_id = client.get(f"/api/v1/runs/{run_id}").json()["pending_approval"][
+        "approval_id"
+    ]
+    body = client.post(f"/api/v1/approvals/{approval_id}/approve", json={}).json()[
+        "run"
+    ]
+    completion = body["completion_summary"]
+
+    assert completion["title"] == "Workflow completed"
+    assert completion["artifact_count"] == len(body["artifacts"])
+    assert completion["issue_creation"]["mode"] == "mock"
+    assert "No real GitHub issues" in completion["issue_creation"]["message"]
+    assert {output["type"] for output in completion["primary_outputs"]} == {
+        "repo_audit_report",
+        "readme_improvement_plan",
+        "github_issue_drafts",
+        "linkedin_post_draft",
+    }
 
 
 def test_node_output_summaries_are_human_readable(client: TestClient) -> None:
@@ -213,6 +295,23 @@ def test_node_output_summaries_are_human_readable(client: TestClient) -> None:
 
     assert "Scanned" in repo_reader["summary"]
     assert "files" in repo_reader["summary"]
+
+
+def test_node_results_are_human_readable(client: TestClient) -> None:
+    workflow_id = generate(client)["workflow_id"]
+    run_id = client.post(
+        "/api/v1/workflows/run", json={"workflow_id": workflow_id}
+    ).json()["run_id"]
+    results = {
+        item["node_id"]: item["summary"]
+        for item in client.get(f"/api/v1/runs/{run_id}").json()["node_results"]
+    }
+
+    assert results["manual_trigger"].startswith("Started from your prompt")
+    assert "README" in results["github_repo_reader"]
+    assert "findings" in results["ai_repo_analyzer"]
+    assert "README score:" in results["readme_reviewer"]
+    assert "Waiting for approval" in results["human_approval"]
 
 
 def test_reject_skips_issue_creator(client: TestClient) -> None:
@@ -292,6 +391,35 @@ def test_artifact_tabs_do_not_show_empty_when_artifact_exists(
     assert linkedin["display"]["empty"] is False
 
 
+def test_artifacts_include_display_metadata(client: TestClient) -> None:
+    workflow_id = generate(client)["workflow_id"]
+    run_id = client.post(
+        "/api/v1/workflows/run", json={"workflow_id": workflow_id}
+    ).json()["run_id"]
+    approval_id = client.get(f"/api/v1/runs/{run_id}").json()["pending_approval"][
+        "approval_id"
+    ]
+    body = client.post(f"/api/v1/approvals/{approval_id}/approve", json={}).json()[
+        "run"
+    ]
+
+    for artifact in body["artifacts"]:
+        assert artifact["title"]
+        assert artifact["purpose"]
+        assert artifact["display"]["copyable"] is True
+        assert artifact["display"]["empty"] is False
+        assert artifact["display"]["primary"] is True
+
+
+def test_frontend_optional_ui_fields_are_backward_compatible(
+    client: TestClient,
+) -> None:
+    generated = generate(client)
+
+    assert {"workflow_id", "workflow", "validation", "summary"} <= set(generated)
+    assert {"guided_steps", "next_action", "workflow_review"} <= set(generated)
+
+
 def test_approval_response_contains_frontend_message_and_poll_hint(
     client: TestClient,
 ) -> None:
@@ -369,3 +497,6 @@ def test_backend_e2e_github_repo_audit_approval_completion(client: TestClient) -
         node for node in approved["nodes"] if node["node_id"] == "github_issue_creator"
     )
     assert issue_node["output"]["mode"] == "mock"
+    artifacts = {item["artifact_type"]: item for item in approved["artifacts"]}
+    assert "Created issues: 1" in artifacts["repo_audit_report"]["content"]
+    assert "mock:https://github.com/" in artifacts["github_issue_drafts"]["content"]

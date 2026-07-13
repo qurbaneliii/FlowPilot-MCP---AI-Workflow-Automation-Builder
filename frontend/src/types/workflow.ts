@@ -1,3 +1,5 @@
+import type { GuidedSteps, NextAction, WorkflowReview } from "./ui";
+
 export type WorkflowNodeType =
   | "manual_trigger"
   | "github_repo_reader"
@@ -32,6 +34,9 @@ export interface Workflow {
   summary?: BackendWorkflowSummary | null;
   node_display?: BackendNodeDisplay[];
   layout?: BackendWorkflowLayout | null;
+  guided_steps?: GuidedSteps;
+  next_action?: NextAction;
+  workflow_review?: WorkflowReview;
 }
 
 export interface GeneratedWorkflow extends Workflow {

@@ -26,8 +26,7 @@ export function ApprovalActionPreview({ approval, mode }: ApprovalActionPreviewP
         <div className="min-w-0">
           <p className="font-semibold text-neutral-50">{action}</p>
           <p className="mt-1 text-sm leading-6 text-neutral-300">
-            This action will create GitHub issues after approval. Mode is{" "}
-            <span className="font-mono text-status-approval">{mode ?? "pending"}</span>.
+            {mode === "real" ? "Approval will create live GitHub issues." : "Safe demo mode will simulate issue creation; no real GitHub issues will be written."}
           </p>
         </div>
       </div>
@@ -38,7 +37,7 @@ export function ApprovalActionPreview({ approval, mode }: ApprovalActionPreviewP
       </div>
       <div className="mt-4 flex items-start gap-2 text-sm text-status-approval">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <p>{summary ?? "Approve creation of generated GitHub issue drafts."}</p>
+        <p>{summary ?? "Approve only after checking the issue titles and acceptance criteria."}</p>
       </div>
     </div>
   );

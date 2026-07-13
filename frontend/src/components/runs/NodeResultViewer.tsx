@@ -14,7 +14,7 @@ export function NodeResultViewer({ run }: NodeResultViewerProps) {
       <EmptyState
         icon={Boxes}
         title="No node outputs yet"
-        description="Completed node outputs will appear as compact, inspectable summaries."
+        description="Run the workflow to see a plain-English result for every automation step."
       />
     );
   }
@@ -41,7 +41,7 @@ export function NodeResultViewer({ run }: NodeResultViewerProps) {
           {node.output && (
             <details className="mt-3 rounded-md border border-neutral-800 bg-neutral-950/70 p-3">
               <summary className="cursor-pointer text-xs font-medium text-neutral-400">
-                Raw details
+                Show technical details
               </summary>
               <pre className="mt-3 max-h-64 overflow-auto text-xs leading-5 text-neutral-300">
                 {JSON.stringify(node.output, null, 2)}

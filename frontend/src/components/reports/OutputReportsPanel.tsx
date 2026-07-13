@@ -18,10 +18,10 @@ interface OutputReportsPanelProps {
 }
 
 const tabs = [
-  { id: "audit", label: "Repo Audit Report" },
-  { id: "readme", label: "README Improvement Plan" },
-  { id: "issues", label: "GitHub Issue Drafts" },
-  { id: "linkedin", label: "LinkedIn Draft" }
+  { id: "audit", label: "Repo Audit Report", purpose: "Review findings, severity, and repository risks." },
+  { id: "readme", label: "README Improvement Plan", purpose: "Use the score and outline to improve documentation." },
+  { id: "issues", label: "GitHub Issue Drafts", purpose: "Review actionable issue drafts and creation results." },
+  { id: "linkedin", label: "LinkedIn Draft", purpose: "Copy polished demo copy; FlowPilot never publishes it." }
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -44,8 +44,20 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
   const audit = extractAudit(run);
   const issueDrafts = extractIssueDrafts(run);
   const linkedinDraft = extractLinkedInDraft(run);
+  const activeDefinition = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const activeArtifact = Array.from(artifactByType.values()).find(
+    (artifact) => artifact.display?.tab === activeTab
+  );
   return (
     <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-md border border-accent-500/20 bg-accent-500/5 p-4">
+        <div>
+          <p className="kicker">Generated deliverable</p>
+          <h3 className="mt-1 text-base font-semibold text-neutral-50">{activeArtifact?.title ?? activeDefinition.label}</h3>
+          <p className="mt-1 text-sm leading-6 text-neutral-400">{activeArtifact?.purpose ?? activeDefinition.purpose}</p>
+        </div>
+        <span className="status-chip">{run?.artifacts.length ?? 0} artifacts ready</span>
+      </div>
       <div className="mb-4 flex gap-2 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-950/55 p-1">
         {tabs.map((tab) => (
           <button
@@ -84,13 +96,7 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
       {activeTab === "issues" && (
         <div className="space-y-4">
           {(issueDrafts.length > 0 || !isAvailable("github_issue_drafts")) && (
-            <IssueDraftsViewer issues={issueDrafts} />
-          )}
-          {isAvailable("github_issue_drafts") && (
-            <MarkdownArtifactViewer
-              artifact={artifactByType.get("github_issue_drafts") as Artifact | undefined}
-              fallbackTitle="GitHub Issue Drafts"
-            />
+            <IssueDraftsViewer issues={issueDrafts} artifactContent={artifactByType.get("github_issue_drafts")?.content} />
           )}
         </div>
       )}
@@ -98,12 +104,6 @@ export function OutputReportsPanel({ run }: OutputReportsPanelProps) {
         <div className="space-y-4">
           {(linkedinDraft || !isAvailable("linkedin_post_draft")) && (
             <LinkedInDraftViewer draft={linkedinDraft} />
-          )}
-          {isAvailable("linkedin_post_draft") && (
-            <MarkdownArtifactViewer
-              artifact={artifactByType.get("linkedin_post_draft") as Artifact | undefined}
-              fallbackTitle="LinkedIn Draft"
-            />
           )}
         </div>
       )}

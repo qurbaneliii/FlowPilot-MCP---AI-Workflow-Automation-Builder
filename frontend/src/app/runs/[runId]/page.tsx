@@ -9,6 +9,8 @@ import { RunStatusBadge } from "@/components/runs/RunStatusBadge";
 import { ContextPanel } from "@/components/workflow/ContextPanel";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { WorkspaceTabs } from "@/components/workflow/WorkspaceTabs";
+import { GuidedStepper } from "@/components/workflow/GuidedStepper";
+import { NextActionCard } from "@/components/workflow/NextActionCard";
 import { useApprovalActions } from "@/hooks/useApprovalActions";
 import { useRunPolling } from "@/hooks/useRunPolling";
 import { getHealth, getWorkflow } from "@/lib/api";
@@ -56,6 +58,12 @@ export default function RunDetailPage() {
   return (
     <AppShell health={health} healthError={healthError} mode={runState.run?.mode}>
       <div className="space-y-6">
+        <GuidedStepper
+          hasWorkflow
+          runStatus={runState.run?.status}
+          guidedSteps={runState.run?.guided_steps ?? workflow?.guided_steps}
+        />
+        <NextActionCard hasWorkflow run={runState.run} />
         <section className="summary-bar">
           <div>
             <p className="kicker">Run detail</p>

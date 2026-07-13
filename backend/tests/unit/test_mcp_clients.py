@@ -3,7 +3,12 @@ import pytest
 
 from app.mcp.clients import openai_mcp_client as openai_mcp_module
 from app.mcp.clients.filesystem_client import FilesystemMCPClient, MockFilesystemClient
-from app.mcp.clients.github_client import GitHubMCPClient, MockGitHubClient
+from app.mcp.clients.github_client import (
+    GitHubMCPClient,
+    GitHubRESTClient,
+    MockGitHubClient,
+    parse_github_repo_url,
+)
 from app.mcp.clients.openai_mcp_client import OpenAIMCPClient
 from app.mcp.exceptions import ToolClientUnavailableError
 from app.mcp.ports import ClientMode, ToolClientPort
@@ -67,6 +72,142 @@ async def test_github_client_mock_create_issue_distinct_for_different_keys() -> 
 
     assert first.data != second.data
     assert len(client.created_issues_by_key) == 2
+
+
+def test_real_github_url_parser() -> None:
+    assert parse_github_repo_url("https://github.com/openai/openai-python.git") == (
+        "openai",
+        "openai-python",
+    )
+    with pytest.raises(ValueError):
+        parse_github_repo_url("https://example.com/openai/openai-python")
+
+
+@pytest.mark.asyncio
+async def test_github_reader_public_repo_snapshot_contract() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/repos/openai/openai-python"):
+            return httpx.Response(
+                200,
+                json={
+                    "full_name": "openai/openai-python",
+                    "default_branch": "main",
+                    "stargazers_count": 100,
+                    "forks_count": 10,
+                    "open_issues_count": 2,
+                    "html_url": "https://github.com/openai/openai-python",
+                },
+            )
+        if "/git/trees/main" in request.url.path:
+            return httpx.Response(
+                200,
+                json={
+                    "tree": [
+                        {"path": "README.md", "type": "blob"},
+                        {"path": "pyproject.toml", "type": "blob"},
+                        {"path": "tests/test_client.py", "type": "blob"},
+                        {"path": ".github/workflows/ci.yml", "type": "blob"},
+                        {"path": ".env.example", "type": "blob"},
+                    ]
+                },
+            )
+        if request.url.path.endswith("/readme"):
+            return httpx.Response(200, text="# OpenAI Python")
+        raise AssertionError(f"Unexpected request: {request.url}")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        snapshot = await GitHubRESTClient(http_client=http_client).get_repo_snapshot(
+            "https://github.com/openai/openai-python"
+        )
+
+    assert snapshot.metadata["owner"] == "openai"
+    assert snapshot.metadata["name"] == "openai-python"
+    assert snapshot.readme == "# OpenAI Python"
+    assert snapshot.env_example_present is True
+    assert snapshot.workflows == [".github/workflows/ci.yml"]
+    assert len(snapshot.file_tree) == 5
+
+
+@pytest.mark.asyncio
+async def test_github_reader_missing_readme_is_not_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/readme"):
+            return httpx.Response(404)
+        if "/git/trees/" in request.url.path:
+            return httpx.Response(200, json={"tree": []})
+        return httpx.Response(200, json={"default_branch": "main"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        snapshot = await GitHubRESTClient(http_client=http_client).get_repo_snapshot(
+            "https://github.com/example/no-readme"
+        )
+    assert snapshot.readme is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("status", "headers", "message"),
+    [
+        (401, {}, "authentication failed"),
+        (403, {"x-ratelimit-remaining": "0"}, "rate limit exceeded"),
+    ],
+)
+async def test_github_reader_provider_errors_are_controlled(
+    status: int, headers: dict[str, str], message: str
+) -> None:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(status, headers=headers)
+        )
+    ) as http_client:
+        with pytest.raises(RuntimeError, match=message):
+            await GitHubRESTClient(http_client=http_client).get_repo_snapshot(
+                "https://github.com/example/repo"
+            )
+
+
+@pytest.mark.asyncio
+async def test_issue_creator_real_mode_requires_token() -> None:
+    result = await GitHubRESTClient().create_issue(
+        repo_url="https://github.com/example/repo",
+        title="Improve README",
+        body="Details",
+        labels=[],
+        idempotency_key="run:node:key",
+    )
+    assert result.error == {
+        "code": "GITHUB_TOKEN_REQUIRED",
+        "message": "Real GitHub issue creation requires GITHUB_TOKEN.",
+    }
+
+
+@pytest.mark.asyncio
+async def test_issue_creator_real_mode_is_idempotent() -> None:
+    calls = {"posts": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json=[])
+        calls["posts"] += 1
+        return httpx.Response(
+            201, json={"html_url": "https://github.com/example/repo/issues/1"}
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = GitHubRESTClient(token="test-token", http_client=http_client)
+        kwargs = {
+            "repo_url": "https://github.com/example/repo",
+            "title": "Improve README",
+            "body": "Details",
+            "labels": ["documentation"],
+            "idempotency_key": "run:node:key",
+        }
+        first = await client.create_issue(**kwargs)
+        second = await client.create_issue(**kwargs)
+
+    assert first.data["url"] == second.data["url"]
+    assert second.data["reused"] is True
+    assert calls["posts"] == 1
 
 
 @pytest.mark.asyncio
@@ -160,6 +301,7 @@ async def test_openai_mcp_client_list_tools_reflects_server_advertised_tools() -
     [
         MockGitHubClient(),
         GitHubMCPClient(server_url="http://example.test/mcp"),
+        GitHubRESTClient(),
         MockFilesystemClient(),
         FilesystemMCPClient(root="."),
         OpenAIMCPClient(server_url=None, api_key=None),

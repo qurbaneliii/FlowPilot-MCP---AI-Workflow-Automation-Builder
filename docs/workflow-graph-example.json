@@ -1,5 +1,67 @@
 {
-  "name": "GitHub Repository Audit",
-  "phase": "placeholder-for-phase-1-schema",
-  "note": "A validated graph example will be produced after the WorkflowGraph schema exists."
+  "nodes": [
+    {
+      "id": "manual_trigger",
+      "type": "manual_trigger",
+      "name": "Manual Trigger",
+      "config": {},
+      "dependencies": []
+    },
+    {
+      "id": "github_repo_reader",
+      "type": "github_repo_reader",
+      "name": "GitHub Repository Reader",
+      "config": {},
+      "dependencies": ["manual_trigger"]
+    },
+    {
+      "id": "ai_repo_analyzer",
+      "type": "ai_repo_analyzer",
+      "name": "AI Repository Analyzer",
+      "config": {},
+      "dependencies": ["github_repo_reader"]
+    },
+    {
+      "id": "readme_reviewer",
+      "type": "readme_reviewer",
+      "name": "README Reviewer",
+      "config": {},
+      "dependencies": ["ai_repo_analyzer"]
+    },
+    {
+      "id": "issue_draft_generator",
+      "type": "issue_draft_generator",
+      "name": "Issue Draft Generator",
+      "config": {},
+      "dependencies": ["readme_reviewer"]
+    },
+    {
+      "id": "human_approval",
+      "type": "human_approval",
+      "name": "Human Approval",
+      "config": {},
+      "dependencies": ["issue_draft_generator"]
+    },
+    {
+      "id": "github_issue_creator",
+      "type": "github_issue_creator",
+      "name": "GitHub Issue Creator",
+      "config": {},
+      "dependencies": ["human_approval"]
+    },
+    {
+      "id": "linkedin_draft_generator",
+      "type": "linkedin_draft_generator",
+      "name": "LinkedIn Draft Generator",
+      "config": {},
+      "dependencies": ["github_issue_creator"]
+    },
+    {
+      "id": "markdown_report_writer",
+      "type": "markdown_report_writer",
+      "name": "Markdown Report Writer",
+      "config": {},
+      "dependencies": ["linkedin_draft_generator"]
+    }
+  ]
 }

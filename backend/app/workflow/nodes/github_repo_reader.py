@@ -40,8 +40,13 @@ class GitHubRepoReaderHandler(NodeHandler):
         result = await run_controlled(
             context,
             read_snapshot,
-            failure_code="github_repo_reader_failed",
-            failure_message="GitHub repository snapshot could not be read.",
+            failure_code="GITHUB_REPOSITORY_READ_FAILED",
+            failure_message=(
+                "FlowPilot could not read this repository. Check that it is public "
+                "or configure a GitHub token."
+            ),
+            failure_severity="error",
+            failure_retryable=True,
         )
         if isinstance(result, NodeExecutionResult):
             return result

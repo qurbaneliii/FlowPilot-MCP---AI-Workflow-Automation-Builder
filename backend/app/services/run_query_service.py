@@ -4,25 +4,30 @@ from app.core.api_errors import ApiError
 from app.schemas.run import RunListResponse, RunResponse
 from app.services.artifact_service import ArtifactService
 from app.services.run_view_service import RunViewService, infer_mode
-from app.services.store import STORE
+from app.services.runtime_storage import RuntimeStorage, get_runtime_storage
+from app.services.ui_metadata import demo_mode, mode_explanations
 from app.workflow.state import RunState
 
 
 class RunQueryService:
-    def __init__(self) -> None:
-        self.artifacts = ArtifactService()
+    def __init__(self, storage: RuntimeStorage | None = None) -> None:
+        self.storage = storage or get_runtime_storage()
+        self.artifacts = ArtifactService(self.storage)
         self.view = RunViewService()
 
     async def get_run(self, run_id: str) -> RunResponse:
-        run_state = STORE.runs.get(run_id)
+        run_state = await self.storage.load_run(run_id)
         if run_state is None:
             raise ApiError(404, "RUN_NOT_FOUND", "Run not found.")
         return await self._to_response(run_state)
 
     async def list_runs(self, limit: int = 20, offset: int = 0) -> RunListResponse:
-        run_ids = list(STORE.runs.keys())[::-1][offset : offset + limit]
+        run_ids = await self.storage.list_run_ids(limit, offset)
         return RunListResponse(
-            runs=[await self._to_response(STORE.runs[run_id]) for run_id in run_ids],
+            runs=[
+                await self._to_response(await self._required_run(run_id))
+                for run_id in run_ids
+            ],
             limit=limit,
             offset=offset,
         )
@@ -49,7 +54,7 @@ class RunQueryService:
         )
         return RunResponse(
             run_id=run_state.run_id,
-            workflow_id=STORE.run_workflows.get(run_state.run_id, ""),
+            workflow_id=await self.storage.workflow_id_for_run(run_state.run_id),
             status=run_state.status,
             summary=summary,
             started_at=started_at,
@@ -71,7 +76,18 @@ class RunQueryService:
             inspector=self.view.inspector(run_state),
             layout=self.view.layout(run_state.graph).model_dump(mode="json"),
             mode=mode,
+            guided_steps=self.view.guided_steps(run_state),
+            next_action=self.view.next_action(run_state),
+            mode_explanations=mode_explanations(),
+            demo_mode=demo_mode(),
+            completion_summary=self.view.completion_summary(run_state, artifacts),
         )
+
+    async def _required_run(self, run_id: str) -> RunState:
+        run_state = await self.storage.load_run(run_id)
+        if run_state is None:
+            raise ApiError(404, "RUN_NOT_FOUND", "Run not found.")
+        return run_state
 
 
 def _started_at(run_state: RunState) -> datetime | None:

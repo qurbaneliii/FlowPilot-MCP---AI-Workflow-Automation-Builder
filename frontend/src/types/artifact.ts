@@ -27,6 +27,7 @@ export interface Artifact {
   type?: ArtifactType;
   filename: string;
   title?: string | null;
+  purpose?: string | null;
   content: string;
   created_at: string;
   mode?: string | null;
@@ -36,6 +37,7 @@ export interface Artifact {
     empty?: boolean;
     copyable?: boolean;
     badge?: string;
+    primary?: boolean;
   };
 }
 

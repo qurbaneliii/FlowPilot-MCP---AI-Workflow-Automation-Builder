@@ -65,9 +65,9 @@ export function WorkspaceTabs({
     <section className="section-card" id="reports">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="kicker">Lower workspace</p>
+          <p className="kicker">Workspace sections</p>
           <h2 className="mt-1 text-lg font-semibold text-neutral-50">
-            Review outputs without crowding the canvas
+            Follow the run, then use your deliverables
           </h2>
         </div>
         <div className="flex gap-2 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-950/55 p-1">
@@ -121,15 +121,15 @@ export function WorkspaceTabs({
       {!run && activeTab === "reports" && (
         <EmptyState
           icon={FileText}
-          title="No reports generated yet"
-          description="Run and approve the workflow to render audit reports and draft artifacts."
+          title="Reports will appear after completion"
+          description="Run the workflow and resolve any approval request. FlowPilot will organize the final audit, README plan, issue drafts, and LinkedIn draft here."
         />
       )}
       {!run && activeTab === "approval" && (
         <EmptyState
           icon={ShieldCheck}
-          title="No approval waiting"
-          description="The approval tab will become active when FlowPilot pauses before GitHub issue creation."
+          title="No decision needed yet"
+          description="This section becomes active automatically when FlowPilot pauses before GitHub issue creation."
         />
       )}
     </section>

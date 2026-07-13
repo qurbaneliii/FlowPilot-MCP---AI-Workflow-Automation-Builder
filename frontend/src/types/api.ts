@@ -1,6 +1,7 @@
 import type { ApprovalDecisionResponse } from "./approval";
 import type { GeneratedWorkflow, Workflow } from "./workflow";
 import type { Run, RunListResponse } from "./run";
+import type { DemoMode, ModeExplanations } from "./ui";
 
 export interface ApiError {
   status: number;
@@ -33,6 +34,13 @@ export interface HealthResponse {
     show_database_warning: boolean;
     database_warning_blocks_demo: boolean;
   };
+  storage?: {
+    mode: "memory" | "postgres";
+    persistent: boolean;
+    reset_on_restart: boolean;
+  };
+  mode_explanations?: ModeExplanations;
+  demo_mode?: DemoMode;
 }
 
 export interface GenerateWorkflowRequest {

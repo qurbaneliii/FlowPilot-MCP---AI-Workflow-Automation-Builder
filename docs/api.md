@@ -1,17 +1,25 @@
-# FlowPilot MCP API
+# API
 
-## GET `/api/v1/health`
+Base URL for local frontend use:
 
-Returns process health and lightweight dependency status.
+```text
+http://127.0.0.1:8000/api/v1
+```
 
-Example response:
+All responses are JSON. API errors use the structured error shape shown at the end of this document.
+
+## GET `/health`
+
+Checks process health, database reachability, OpenAI configuration, and UI-friendly service labels.
+
+Example degraded local response:
 
 ```json
 {
   "status": "ok",
   "version": "0.1.0",
   "dependencies": {
-    "database": "ok",
+    "database": "not_configured",
     "openai": "not_configured"
   },
   "services": {
@@ -22,9 +30,9 @@ Example response:
       "blocking": false
     },
     "database": {
-      "status": "not_configured",
+      "status": "memory",
       "label": "Memory mode",
-      "severity": "warning",
+      "severity": "info",
       "blocking": false
     },
     "mcp": {
@@ -45,84 +53,224 @@ Example response:
     "storage_mode_label": "Memory mode",
     "show_database_warning": true,
     "database_warning_blocks_demo": false
+  },
+  "storage": {
+    "mode": "memory",
+    "persistent": false,
+    "reset_on_restart": true
   }
 }
 ```
 
-`dependencies` is preserved for older clients. New `services` and `ui` fields distinguish blocking outages from non-blocking local/demo modes, so the frontend only renders red service status when `blocking` is true.
+Rules:
 
-## POST `/api/v1/workflows/generate`
+- `dependencies` is preserved for older clients.
+- `services.*.blocking` tells the frontend whether a warning should be red/error-level.
+- Mock/in-memory demo modes are explicit and not presented as catastrophic failures.
+- Postgres mode reports `Postgres connected`; an unavailable configured Postgres service is blocking and never silently falls back to memory.
 
-Generates and validates a GitHub repository audit workflow, then persists the graph.
+## POST `/workflows/generate`
+
+Generates and validates a GitHub repository audit workflow.
+
+Request:
 
 ```json
 {
-  "prompt": "Analyze this GitHub repository and generate issue drafts.",
+  "prompt": "Audit this GitHub repository and draft guarded improvement issues.",
   "repo_url": "https://github.com/example/repo"
 }
 ```
 
-Returns `workflow_id`, `workflow`, `validation`, `warnings`, and UI-friendly view data:
+Response includes:
 
-- `summary`: compact workflow name, repo URL, node count, stage count, risk count, approval requirement, mode, and status label.
-- `node_display`: stable display name, subtitle, icon token, order, stage, dependencies, risk level, and description for each node.
-- `layout`: optional canvas positioning hints.
+- `workflow_id`
+- `workflow`
+- `validation`
+- `summary`
+- `node_display`
+- `layout`
+- `warnings`
 
-## GET `/api/v1/workflows/{workflow_id}`
+The `workflow` object follows the spec in `docs/workflow-json-spec.md`.
 
-Returns the saved workflow graph and source metadata.
+## GET `/workflows/{workflow_id}`
 
-## POST `/api/v1/workflows/run`
+Returns a persisted workflow graph with source metadata and UI-friendly workflow display fields.
 
-Creates a run and starts execution in a background task.
+Response includes:
+
+- `workflow_id`
+- `workflow`
+- `metadata.source_prompt`
+- `metadata.repo_url`
+- `metadata.created_at`
+- `summary`
+- `node_display`
+- `layout`
+
+## POST `/workflows/run`
+
+Starts a run for a generated workflow.
+
+Request:
 
 ```json
 {
-  "workflow_id": "..."
+  "workflow_id": "wf_or_uuid"
 }
 ```
 
-Returns quickly with `{ "run_id": "...", "status": "running" }`.
+Response:
 
-## GET `/api/v1/runs/{run_id}`
+```json
+{
+  "run_id": "run_or_uuid",
+  "status": "running"
+}
+```
 
-Returns run status, node statuses, node outputs, errors, artifacts, pending approval, and mock/real mode where available. The raw fields remain available for advanced/debug views.
+The run executes as a background task.
 
-The response also includes UI-oriented fields:
+## GET `/runs/{run_id}`
 
-- `summary`: run card data, counts, active node, timestamps, and `next_required_action`.
-- `nodes[].display`: concise node card summary, icon token, severity, and approval/risk flags.
-- `timeline`: ordered readable node status messages.
-- `approval`: first-class approval panel data when approval is pending; otherwise `null`.
-- `artifacts`: artifact metadata, content, title, type, and display hints.
-- `artifact_tabs`: availability by stable artifact type, avoiding contradictory empty states.
-- `node_results`: human-readable node output summaries with metrics.
-- `ui_state`: recommended active tab/view, canvas focus node, panel visibility, and optional banner.
+Returns the raw run state plus UI-friendly view models.
 
-## GET `/api/v1/runs`
+Important fields:
 
-Returns recent runs with `limit` and `offset` pagination.
+- `run_id`
+- `workflow_id`
+- `status`
+- `summary`
+- `nodes`
+- `timeline`
+- `approval`
+- `logs`
+- `node_outputs`
+- `node_results`
+- `errors`
+- `artifacts`
+- `artifact_tabs`
+- `pending_approval`
+- `ui_state`
+- `inspector`
+- `layout`
+- `mode`
 
-## POST `/api/v1/approvals/{approval_id}/approve`
+Status values:
 
-Approves a pending risky action and resumes execution. The response includes `status`, `run_id`, user-facing `message`, `run_status`, `next_poll_recommended`, and the updated `run`.
+```text
+pending
+running
+waiting_for_approval
+completed
+failed
+```
 
-## POST `/api/v1/approvals/{approval_id}/reject`
+Node status values:
 
-Rejects the risky write, skips issue creation, and continues safe report generation when the workflow graph allows it. The response includes the same frontend action hints as approval.
+```text
+pending
+running
+completed
+failed
+waiting_for_approval
+skipped
+```
+
+When the run is waiting for approval:
+
+- `approval` is a first-class panel object
+- `pending_approval` remains for backward compatibility
+- `ui_state.recommended_tab` is `approval`
+- `github_issue_creator` remains `pending`
+
+When the run completes:
+
+- `artifacts` contains report content and metadata
+- `artifact_tabs` marks available tabs
+- `ui_state.recommended_tab` is `reports`
+
+## GET `/runs`
+
+Lists recent runs.
+
+Query parameters:
+
+- `limit`: integer, default `20`, max `100`
+- `offset`: integer, default `0`
+
+Response:
+
+```json
+{
+  "runs": [],
+  "limit": 20,
+  "offset": 0
+}
+```
+
+## POST `/approvals/{approval_id}/approve`
+
+Approves a pending guarded action and resumes execution.
+
+Response includes:
+
+```json
+{
+  "approval_id": "appr_or_uuid",
+  "status": "approved",
+  "decision": "approved",
+  "run_id": "run_or_uuid",
+  "message": "Approval recorded. Workflow will resume.",
+  "run_status": "completed",
+  "next_poll_recommended": true,
+  "run": {}
+}
+```
+
+Duplicate approval calls are controlled with a structured `409` conflict.
+
+## POST `/approvals/{approval_id}/reject`
+
+Rejects the guarded action. For the MVP, GitHub issue creation is skipped and safe report generation can continue.
+
+Response includes:
+
+```json
+{
+  "approval_id": "appr_or_uuid",
+  "status": "rejected",
+  "decision": "rejected",
+  "run_id": "run_or_uuid",
+  "message": "Approval rejected. GitHub issue creation will be skipped.",
+  "run_status": "completed",
+  "next_poll_recommended": true,
+  "run": {}
+}
+```
 
 ## Structured Errors
 
-API errors use this shape:
+Example:
 
 ```json
 {
   "error": {
-    "code": "WORKFLOW_NOT_FOUND",
-    "message": "Workflow not found.",
-    "details": {},
+    "code": "INVALID_REPO_URL",
+    "message": "Enter a valid GitHub repository URL.",
+    "details": {
+      "repo_url": "not-a-url"
+    },
     "severity": "warning",
     "retryable": false
   }
 }
 ```
+
+Guidelines:
+
+- Messages should be user-facing.
+- Stack traces are not returned.
+- Field-level details are included where useful.
+- `retryable` helps the frontend decide whether retry UI is appropriate.

@@ -43,6 +43,8 @@ async def run_controlled(
     *,
     failure_code: str,
     failure_message: str,
+    failure_severity: str | None = None,
+    failure_retryable: bool | None = None,
     timeout_seconds: float = 10.0,
     max_attempts: int = 2,
 ) -> T | NodeExecutionResult:
@@ -60,7 +62,12 @@ async def run_controlled(
             level=logging.WARNING,
             failure_code=failure_code,
         )
-        return failed(failure_code, failure_message)
+        return failed(
+            failure_code,
+            failure_message,
+            severity=failure_severity,
+            retryable=failure_retryable,
+        )
     except AgentError:
         log_node(
             context,
@@ -68,7 +75,12 @@ async def run_controlled(
             level=logging.WARNING,
             failure_code=failure_code,
         )
-        return failed(failure_code, failure_message)
+        return failed(
+            failure_code,
+            failure_message,
+            severity=failure_severity,
+            retryable=failure_retryable,
+        )
     except MCPClientError:
         log_node(
             context,
@@ -76,7 +88,12 @@ async def run_controlled(
             level=logging.WARNING,
             failure_code=failure_code,
         )
-        return failed(failure_code, failure_message)
+        return failed(
+            failure_code,
+            failure_message,
+            severity=failure_severity,
+            retryable=failure_retryable,
+        )
     except (ValidationError, WorkflowDomainError):
         log_node(
             context,
@@ -84,7 +101,12 @@ async def run_controlled(
             level=logging.WARNING,
             failure_code=failure_code,
         )
-        return failed(failure_code, failure_message)
+        return failed(
+            failure_code,
+            failure_message,
+            severity=failure_severity,
+            retryable=failure_retryable,
+        )
     except Exception:
         log_node(
             context,
@@ -92,7 +114,12 @@ async def run_controlled(
             level=logging.WARNING,
             failure_code=failure_code,
         )
-        return failed(failure_code, failure_message)
+        return failed(
+            failure_code,
+            failure_message,
+            severity=failure_severity,
+            retryable=failure_retryable,
+        )
 
 
 def completed(output: dict[str, Any]) -> NodeExecutionResult:
@@ -100,11 +127,25 @@ def completed(output: dict[str, Any]) -> NodeExecutionResult:
 
 
 def failed(
-    code: str, message: str, details: dict[str, Any] | None = None
+    code: str,
+    message: str,
+    details: dict[str, Any] | None = None,
+    *,
+    severity: str | None = None,
+    retryable: bool | None = None,
 ) -> NodeExecutionResult:
+    error: dict[str, Any] = {
+        "code": code,
+        "message": message,
+        "details": details or {},
+    }
+    if severity is not None:
+        error["severity"] = severity
+    if retryable is not None:
+        error["retryable"] = retryable
     return NodeExecutionResult(
         status="failed",
-        error={"code": code, "message": message, "details": details or {}},
+        error=error,
     )
 
 

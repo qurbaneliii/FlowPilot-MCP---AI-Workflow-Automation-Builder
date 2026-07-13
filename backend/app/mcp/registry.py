@@ -2,7 +2,11 @@ from typing import Literal
 
 from app.core.config import Settings, get_settings
 from app.mcp.clients.filesystem_client import FilesystemMCPClient, MockFilesystemClient
-from app.mcp.clients.github_client import GitHubMCPClient, MockGitHubClient
+from app.mcp.clients.github_client import (
+    GitHubMCPClient,
+    GitHubRESTClient,
+    MockGitHubClient,
+)
 from app.mcp.clients.openai_mcp_client import OpenAIMCPClient
 from app.mcp.exceptions import UnknownToolClientError
 from app.mcp.ports import ToolClientPort
@@ -31,10 +35,12 @@ class ToolClientRegistry:
 
     def _build_github_client(self) -> ToolClientPort:
         if self.settings.github_mcp_mode == "real":
-            return GitHubMCPClient(
-                server_url=self.settings.github_mcp_server_url or "",
-                token=self.settings.github_token,
-            )
+            if self.settings.github_mcp_server_url:
+                return GitHubMCPClient(
+                    server_url=self.settings.github_mcp_server_url,
+                    token=self.settings.github_token,
+                )
+            return GitHubRESTClient(token=self.settings.github_token)
         return MockGitHubClient()
 
     def _build_filesystem_client(self) -> ToolClientPort:

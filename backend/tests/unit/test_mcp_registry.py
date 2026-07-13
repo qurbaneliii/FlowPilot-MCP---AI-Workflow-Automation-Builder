@@ -4,7 +4,11 @@ import pytest
 
 from app.core.config import Settings
 from app.mcp.clients.filesystem_client import FilesystemMCPClient, MockFilesystemClient
-from app.mcp.clients.github_client import GitHubMCPClient, MockGitHubClient
+from app.mcp.clients.github_client import (
+    GitHubMCPClient,
+    GitHubRESTClient,
+    MockGitHubClient,
+)
 from app.mcp.exceptions import UnknownToolClientError
 from app.mcp.ports import ClientMode
 from app.mcp.registry import ToolClientRegistry
@@ -31,6 +35,15 @@ def test_registry_resolves_real_when_mode_env_set_to_real() -> None:
 
     assert isinstance(registry.get_client("github"), GitHubMCPClient)
     assert isinstance(registry.get_client("filesystem"), FilesystemMCPClient)
+    assert registry.get_client("github").mode == ClientMode.REAL
+
+
+def test_registry_uses_builtin_rest_for_real_mode_without_mcp_url() -> None:
+    registry = ToolClientRegistry(
+        Settings(github_mcp_mode="real", github_mcp_server_url=None)
+    )
+
+    assert isinstance(registry.get_client("github"), GitHubRESTClient)
     assert registry.get_client("github").mode == ClientMode.REAL
 
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { generateWorkflow } from "@/lib/api";
+import { FlowPilotApiError, generateWorkflow } from "@/lib/api";
 import type { GeneratedWorkflow } from "@/types/workflow";
 
 const GITHUB_REPO_RE =
@@ -11,7 +11,7 @@ export function useWorkflow() {
   const [prompt, setPrompt] = useState(
     "Audit this GitHub repository and draft guarded improvement issues."
   );
-  const [repoUrl, setRepoUrl] = useState("https://github.com/example/repo");
+  const [repoUrl, setRepoUrl] = useState("");
   const [workflow, setWorkflow] = useState<GeneratedWorkflow | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +43,10 @@ export function useWorkflow() {
       return response;
     } catch (caught) {
       const message =
-        caught instanceof Error
-          ? caught.message
+        caught instanceof FlowPilotApiError
+          ? friendlyApiError(caught)
+          : caught instanceof Error
+          ? friendlyGenerationError(caught.message)
           : "Workflow generation failed in a controlled way.";
       setError(message);
       return null;
@@ -65,4 +67,19 @@ export function useWorkflow() {
     error,
     generate
   };
+}
+
+function friendlyApiError(error: FlowPilotApiError): string {
+  const example = error.details?.example;
+  if (typeof example === "string") {
+    return `${error.message} For example: ${example}`;
+  }
+  return friendlyGenerationError(error.message);
+}
+
+function friendlyGenerationError(message: string): string {
+  if (message.toLowerCase().includes("repo") || message.toLowerCase().includes("github")) {
+    return "Enter a valid public GitHub repository URL, for example https://github.com/openai/openai-python.";
+  }
+  return `FlowPilot could not generate this workflow. ${message}`;
 }

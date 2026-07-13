@@ -1,52 +1,114 @@
-# FlowPilot MCP Architecture
+# Architecture
 
-## Current Architecture
+FlowPilot MCP is a lightweight AI workflow automation engine. It converts natural-language automation requests into executable workflow graphs, executes them through agent abstractions and MCP-style tool clients, persists run state and artifacts, and adds human approval before risky actions.
 
-The current codebase has completed the scaffold, workflow domain, persistence models, MCP adapter layer, agent abstraction layer, production node handlers, and the backend MVP API contract. Frontend workflow screens are the next implementation layer.
+The current MVP is centered on a GitHub Repository Audit workflow. The architecture is intentionally modular so graph execution stays testable and independent from HTTP, persistence, agents, and external tools.
+
+## System Diagram
 
 ```mermaid
 flowchart LR
-  Browser["Browser"] --> Frontend["Next.js Frontend"]
-  Frontend --> ApiClient["Frontend API Client"]
-  ApiClient --> Backend["FastAPI API Layer"]
-  Backend --> Services["Application Services"]
-  Services --> ViewModels["Run / Workflow View Services"]
-  Services --> RunService["Workflow Run Service"]
-  RunService --> Handlers["Production Node Handlers"]
-  RunService --> Domain["Pure Workflow Domain Engine"]
-  Domain --> State["Serializable RunState"]
-  RunService --> StoragePorts["Storage Repository Ports"]
-  StoragePorts --> Storage["SQLAlchemy Repositories"]
-  Storage --> Postgres["PostgreSQL"]
-  Handlers --> Agents["Agent Layer"]
+  Browser["Next.js UI"] --> Client["Typed API Client"]
+  Client --> API["FastAPI Routers"]
+  API --> Generation["WorkflowGenerationService"]
+  API --> Runner["WorkflowRunService"]
+  API --> Query["RunQueryService"]
+  Generation --> Planner["PlannerAgent"]
+  Generation --> Validator["ValidatorAgent"]
+  Runner --> Engine["Pure WorkflowEngine"]
+  Engine --> Registry["Node Registry"]
+  Registry --> Handlers["Production Node Handlers"]
+  Handlers --> Agents["AgentRunner"]
   Handlers --> MCP["MCP Registry"]
-  Agents --> AgentBackends["Real / Fake / Unavailable Agent Backends"]
-  MCP --> GitHub["GitHub MCP client"]
-  MCP --> Filesystem["Filesystem MCP client"]
-  MCP --> OpenAI["OpenAI MCP client"]
+  Query --> View["RunViewService"]
+  View --> UIState["UI-friendly response models"]
+  Runner --> Storage["Runtime storage boundary"]
+  Storage --> Memory["Explicit memory demo"]
+  Storage --> Repos["Repository ports"]
+  Repos --> Postgres["PostgreSQL / SQLAlchemy runtime"]
 ```
 
-## Design Decisions
+## Runtime Layers
 
-- Health returns `not_configured` for OpenAI when no API key is present. This keeps local development bootable while making the missing integration explicit.
-- Later workflow logic will live under `backend/app/workflow/` without FastAPI, database, or transport dependencies.
-- Persistence is attached outside the domain core through repository ports in `backend/app/storage/ports.py`. SQLAlchemy implementations live under `backend/app/storage/repositories/`, and `backend/app/workflow/` remains free of SQLAlchemy, FastAPI, HTTP, MCP, and agent imports.
-- Node execution input snapshots are defined by `resolve_node_inputs`: static node config plus a reserved `_dependencies` map of upstream outputs. This is the contract Phase 2 persists as `input_snapshot_json`.
-- MCP clients sit behind `ToolClientPort` and are resolved through `ToolClientRegistry`. GitHub/filesystem mock-vs-real selection happens only in `app/mcp/registry.py`; OpenAI MCP distinguishes `REAL`, `MOCK`, and `UNAVAILABLE` client modes so absent configuration is not confused with fake data.
-- Agents sit behind `AgentPort` and are invoked through `AgentRunner`. The runner owns prompt loading, backend-mode selection, retry/timeout composition, validation reprompting, and strict output parsing. Tests use deterministic fake/unavailable backends and never call the real OpenAI API.
-- Production node handlers live under `backend/app/workflow/nodes/` and are registered through the existing node registry. They convert agent/MCP failures into controlled node failure results and keep mock mode explicit in outputs.
-- Human approval persistence and markdown artifact persistence are coordinated by services around the workflow engine. The handler emits the approval/artifact intent; services persist and expose it through API responses.
-- The Phase 6 MVP API uses deterministic in-process persistence for local E2E tests while the SQLAlchemy repositories remain available for the database-backed persistence layer.
-- UI-friendly response data is computed in service/view-model code from raw persisted workflow, run, artifact, and approval data. The backend exposes compact summaries, timeline entries, approval panel data, artifact tab availability, and `ui_state` without persisting UI-only fields or removing raw debug outputs.
-- Health responses separate raw dependency checks from user-facing service labels and blocking flags, so local mock/in-memory modes remain explicit without presenting a non-blocking database miss as a fatal app error.
+### Frontend
 
-## Boundaries
+The frontend is a product workspace:
 
-- Domain engine, graph, state, and input resolution stay pure and live under `backend/app/workflow/`.
-- Services coordinate persistence and workflow execution.
-- View services compute additive API response summaries for the frontend.
-- Node handlers call agents and MCP clients.
-- Agents handle AI transformations and output validation.
+- generates workflows from a prompt and GitHub URL
+- renders the graph as custom React Flow nodes
+- polls run state
+- surfaces approval actions
+- displays reports, timeline, logs, node results, and raw debug output
+
+### API Layer
+
+FastAPI routes are intentionally thin. They validate requests, delegate to services, and return typed Pydantic response models. Structured API errors include:
+
+- `code`
+- `message`
+- `details`
+- `severity`
+- `retryable`
+
+### Service Layer
+
+Services coordinate work across the domain engine, agents, MCP clients, approval records, artifacts, and response view models.
+
+Key services:
+
+- `WorkflowGenerationService`: planner + validator + persisted workflow entry
+- `WorkflowRunService`: creates and executes run state
+- `RunQueryService`: returns raw and UI-friendly run responses
+- `RunViewService`: computes summaries, timeline, approval panel data, artifact tab state, and `ui_state`
+- `ApprovalService`: records approve/reject decisions and resumes or skips guarded work
+- `ArtifactService`: persists artifact payloads emitted by report nodes
+
+### Workflow Domain
+
+`backend/app/workflow/` is kept pure:
+
+- graph validation
+- deterministic topological sorting
+- node state transitions
+- retry and timeout behavior
+- approval pause/resume
+- cascade skip behavior
+- input resolution from dependency outputs
+
+It does not import FastAPI, SQLAlchemy, MCP, or agent modules.
+
+### Agent Layer
+
+Agents are wrappers around a shared `AgentRunner`. The runner loads versioned prompts, invokes a selected backend, validates strict Pydantic output, retries transient errors, and reprompts once after invalid output.
+
+### MCP-style Tool Layer
+
+MCP-style clients are hidden behind ports and a registry. GitHub and filesystem clients default to mock mode. The OpenAI MCP client is explicit unavailable mode when no MCP server URL is configured.
+
+## Persistence Status
+
+API services use one runtime storage boundary. With `DATABASE_URL` configured, it selects the existing SQLAlchemy repositories for workflows, runs, node execution state and logs, approvals, and artifacts. `STORAGE_MODE=memory` is the explicit reset-on-restart demo fallback. Health reports the selected mode, whether it is persistent, and whether state resets on restart.
+
+## Backend-Driven UI State
+
+The API returns additive UI-friendly fields while preserving raw outputs:
+
+- workflow `summary`
+- workflow `node_display`
+- run `summary`
+- run `timeline`
+- run `approval`
+- run `artifact_tabs`
+- run `node_results`
+- run `ui_state`
+
+The frontend uses these fields first and falls back to raw outputs only when needed.
+
+## Design Boundaries
+
+- Workflow engine remains framework-independent.
+- Services coordinate side effects.
+- Agents transform and validate AI-generated content.
 - MCP clients handle external tool access.
-- API routes validate requests and delegate to services.
-- Frontend code consumes API responses and renders workflow state.
+- API routes do not contain business logic.
+- UI-only response fields are computed, not persisted.

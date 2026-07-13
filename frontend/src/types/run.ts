@@ -1,5 +1,12 @@
 import type { Approval, ApprovalPanelData } from "./approval";
 import type { Artifact } from "./artifact";
+import type {
+  CompletionSummaryData,
+  DemoMode,
+  GuidedSteps,
+  ModeExplanations,
+  NextAction
+} from "./ui";
 
 export type RunStatus =
   | "pending"
@@ -83,6 +90,11 @@ export interface Run {
     nodes: Array<{ id: string; x: number; y: number }>;
   } | null;
   mode?: string | null;
+  guided_steps?: GuidedSteps;
+  next_action?: NextAction;
+  mode_explanations?: ModeExplanations;
+  demo_mode?: DemoMode;
+  completion_summary?: CompletionSummaryData | null;
 }
 
 export interface RunListResponse {

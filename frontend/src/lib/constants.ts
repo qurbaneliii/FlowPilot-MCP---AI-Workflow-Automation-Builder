@@ -90,46 +90,53 @@ export const STATUS_META: Record<
 
 export const NODE_TYPE_META: Record<
   string,
-  { label: string; icon: LucideIcon; accent: string }
+  { label: string; description: string; icon: LucideIcon; accent: string }
 > = {
-  manual_trigger: { label: "Trigger", icon: Sparkles, accent: "text-accent-300" },
-  github_repo_reader: { label: "GitHub MCP", icon: Github, accent: "text-sky-300" },
+  manual_trigger: { label: "Starts from your prompt", description: "Captures your task and repository.", icon: Sparkles, accent: "text-accent-300" },
+  github_repo_reader: { label: "Reads repository files", description: "Scans metadata, README, and project files.", icon: Github, accent: "text-sky-300" },
   ai_repo_analyzer: {
-    label: "AI analysis",
+    label: "Finds quality issues",
+    description: "Analyzes structure, readiness, and risks.",
     icon: ShieldAlert,
     accent: "text-violet-300"
   },
   readme_reviewer: {
-    label: "README review",
+    label: "Scores documentation",
+    description: "Reviews README clarity and missing sections.",
     icon: FileText,
     accent: "text-emerald-300"
   },
   issue_draft_generator: {
-    label: "Issue drafts",
+    label: "Creates issue drafts",
+    description: "Turns findings into actionable issue proposals.",
     icon: PenLine,
     accent: "text-amber-300"
   },
   human_approval: {
-    label: "Approval gate",
+    label: "Waits for your decision",
+    description: "Pauses before any GitHub issue write.",
     icon: AlertTriangle,
     accent: "text-amber-300"
   },
   github_issue_creator: {
-    label: "Issue creation",
+    label: "Creates approved issues",
+    description: "Writes only after explicit approval.",
     icon: Github,
     accent: "text-red-300"
   },
   linkedin_draft_generator: {
-    label: "LinkedIn draft",
+    label: "Writes a post draft",
+    description: "Produces copy but never publishes it.",
     icon: PenLine,
     accent: "text-blue-300"
   },
   markdown_report_writer: {
-    label: "Reports",
+    label: "Saves final reports",
+    description: "Packages the audit into four deliverables.",
     icon: Terminal,
     accent: "text-emerald-300"
   },
-  condition: { label: "Condition", icon: GitBranch, accent: "text-neutral-300" }
+  condition: { label: "Checks a condition", description: "Routes workflow execution safely.", icon: GitBranch, accent: "text-neutral-300" }
 };
 
 export const EXAMPLE_PROMPTS = [
@@ -146,6 +153,7 @@ export function getNodeTypeMeta(type: WorkflowNodeType) {
   return (
     NODE_TYPE_META[type] ?? {
       label: type.replaceAll("_", " "),
+      description: "Executes this workflow step.",
       icon: Circle,
       accent: "text-neutral-300"
     }

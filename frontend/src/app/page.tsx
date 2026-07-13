@@ -9,6 +9,8 @@ import { StartWorkflowView } from "@/components/workflow/StartWorkflowView";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { WorkflowSummaryBar } from "@/components/workflow/WorkflowSummaryBar";
 import { WorkspaceTabs } from "@/components/workflow/WorkspaceTabs";
+import { GuidedStepper } from "@/components/workflow/GuidedStepper";
+import { NextActionCard } from "@/components/workflow/NextActionCard";
 import { useApprovalActions } from "@/hooks/useApprovalActions";
 import { useRunPolling } from "@/hooks/useRunPolling";
 import { useWorkflow } from "@/hooks/useWorkflow";
@@ -62,6 +64,12 @@ export default function HomePage() {
         />
       ) : (
         <div className="space-y-6">
+          <GuidedStepper
+            hasWorkflow
+            runStatus={runState.run?.status}
+            guidedSteps={runState.run?.guided_steps ?? workflowState.workflow.guided_steps}
+          />
+          <NextActionCard hasWorkflow run={runState.run} workflow={workflowState.workflow} />
           <WorkflowSummaryBar
             workflow={workflowState.workflow}
             graph={graph}
